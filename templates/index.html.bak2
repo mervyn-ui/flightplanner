@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flight Search</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #4f4300;
+      padding: 2rem 1rem 3.2rem;
+      text-align: center;
+    }
+    .udra-logo { display: block; margin: 0 auto 0.7rem; height: 44px; width: auto; }
+    header p  { color: #c8b870; margin-top: 0; font-size: 0.88rem; letter-spacing: 0.04em; }
+
+    /* ── Search card ── */
+    .search-wrap {
+      max-width: 900px;
+      margin: -1.8rem auto 0;
+      padding: 0 1rem;
+    }
+    .search-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.8rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+    }
+
+    .trip-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.4rem; }
+    .trip-btn {
+      padding: 0.45rem 1.2rem;
+      border-radius: 99px;
+      border: 1.5px solid #d0d7e2;
+      background: transparent;
+      color: #5a6a85;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .trip-btn.active { background: #4f4300; border-color: #4f4300; color: #fff; }
+
+    .fields      { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .dates-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.4rem; }
+    #return-row  { display: none; }
+
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #8a99b0;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.35rem;
+    }
+    .field input {
+      width: 100%;
+      border: 1.5px solid #d0d7e2;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      color: #1a1a2e;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #f8fafc;
+    }
+    .field input:focus { border-color: #4f4300; background: #fff; }
+
+    .search-btn {
+      width: 100%;
+      padding: 0.95rem;
+      background: #4f4300;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .search-btn:hover    { opacity: 0.88; }
+    .search-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Tabs ── */
+    .tabs-bar {
+      max-width: 900px;
+      margin: 1.6rem auto 0;
+      padding: 0 1rem;
+      display: flex;
+      gap: 0.4rem;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      padding: 0.55rem 1.2rem;
+      font-size: 0.9rem; font-weight: 600;
+      border: none; background: none;
+      color: #888; cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: #4f4300; border-bottom-color: #4f4300; }
+    .tab-btn:hover:not(.active) { color: #4f4300; }
+    .tab-badge {
+      display: inline-block;
+      background: #d63082; color: #fff;
+      font-size: 0.65rem; font-weight: 800;
+      border-radius: 99px; padding: 0.1rem 0.45rem;
+      margin-left: 0.3rem; vertical-align: middle;
+    }
+
+    /* ── Results ── */
+    .results-wrap {
+      max-width: 900px;
+      margin: 1.6rem auto 3rem;
+      padding: 0 1rem;
+    }
+    .mytrips-wrap {
+      max-width: 900px;
+      margin: 1.6rem auto 3rem;
+      padding: 0 1rem;
+      display: none;
+    }
+    .results-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.9rem;
+      font-size: 0.85rem;
+      color: #5a6a85;
+    }
+    .results-meta strong { color: #1a1a2e; font-size: 1rem; }
+
+    /* ── Flight card ── */
+    .flight-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 0.6rem;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .flight-card.selected {
+      border-color: #7a6800;
+      box-shadow: 0 0 0 2px #c9a8f5;
+    }
+
+    /* Floating share bar */
+    #share-bar {
+      display: none;
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      color: #fff;
+      border-radius: 50px;
+      padding: 0.75rem 1.25rem;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      z-index: 999;
+      white-space: nowrap;
+    }
+    #share-bar.visible { display: flex; }
+    .share-count { font-size: 0.9rem; font-weight: 600; margin-right: 0.25rem; }
+    .share-btn {
+      background: #fff; color: #1a1a2e; border: none;
+      border-radius: 20px; padding: 0.4rem 0.9rem;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .share-btn:hover { background: #e8e8ff; }
+    .share-btn.wa  { background: #25d366; color: #fff; }
+    .share-btn.wa:hover { background: #1ebe5b; }
+    .share-clear { background: none; border: none; color: #aaa; cursor: pointer; font-size: 1.1rem; padding: 0 0.25rem; }
+    .share-clear:hover { color: #fff; }
+
+    /* Top bar: [♡ ↗]  [badges]  [luggage] */
+    .card-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid #ebebeb;
+      background: #fff;
+    }
+    .topbar-left   { display: flex; gap: 0.4rem; }
+    .topbar-center { display: flex; gap: 0.4rem; }
+    .topbar-right  { display: flex; gap: 0.45rem; align-items: center; }
+
+    .icon-btn {
+      width: 34px; height: 34px;
+      border: 1.5px solid #b8a850;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      color: #7a6800;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: #f7f4e8; }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.28rem 0.85rem;
+      border-radius: 99px;
+      letter-spacing: 0.01em;
+    }
+    .badge-best     { background: #d5f5f0; color: #0a8a7e; }
+    .badge-cheapest { background: #d4f5dc; color: #1a8c3a; }
+    .badge-booked   { background: #d63082; color: #fff; font-weight: 800; letter-spacing: 0.04em; }
+
+    .luggage-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: 1.5px solid #b8a850;
+      border-radius: 8px;
+      padding: 0.25rem 0.6rem;
+      background: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1a1a2e;
+      cursor: pointer;
+      min-width: 44px;
+    }
+
+    /* Card body: flight rows | price */
+    .card-body { display: flex; align-items: stretch; }
+
+    /* Flight rows stacked on the left */
+    .card-flights { flex: 1; }
+
+    .flight-row {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1rem;
+      border-bottom: 1px solid #f2f2f2;
+      gap: 0.8rem;
+    }
+    .flight-row:last-child { border-bottom: none; }
+
+    /* Checkbox */
+    .row-check input[type=checkbox] {
+      width: 17px; height: 17px;
+      accent-color: #7a6800;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Airline logo */
+    .row-logo {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: #f7f4e8;
+      border: 1.5px solid #d4c878;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: #7a6800;
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+    }
+
+    /* Times + city */
+    .row-info { flex: 1; min-width: 0; }
+    .row-times {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #111111;
+      white-space: nowrap;
+      letter-spacing: -0.3px;
+    }
+    .row-date-label {
+      font-size: 0.7rem;
+      color: #aaa;
+      font-weight: 400;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .row-cities {
+      font-size: 0.8rem;
+      color: #888888;
+      margin-top: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 400;
+    }
+
+    /* Direct */
+    .row-direct {
+      width: 80px;
+      text-align: center;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #111;
+      flex-shrink: 0;
+    }
+    .row-direct.stops { color: #d97706; font-weight: 600; }
+
+    /* Duration */
+    .row-duration {
+      width: 72px;
+      text-align: left;
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: #222;
+      flex-shrink: 0;
+    }
+
+    /* Price — right column with left border, spans all rows */
+    .card-price {
+      width: 140px;
+      flex-shrink: 0;
+      border-left: 1px solid #ebebeb;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 1rem 1.1rem;
+      gap: 0.3rem;
+    }
+    .price-amount {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #111;
+      line-height: 1;
+      white-space: nowrap;
+      letter-spacing: -1px;
+    }
+    .price-tier {
+      font-size: 0.78rem;
+      color: #888;
+      font-weight: 400;
+    }
+    .bekijk-deal-btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.55rem 0.5rem;
+      background: #d63082;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .bekijk-deal-btn:hover { opacity: 0.88; }
+    .rental-card-btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.3rem;
+      padding: 0.4rem 0.5rem;
+      background: #fff;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #333;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .rental-card-btn:hover { border-color: #e8430a; color: #e8430a; background: #fff8f5; }
+    .parkos-card-btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.3rem;
+      padding: 0.4rem 0.5rem;
+      background: #fff;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #333;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .parkos-card-btn:hover { border-color: #0070c0; color: #0070c0; background: #f0f7ff; }
+    .unconfirm-btn {
+      display: block; width: 100%;
+      margin-top: 0.3rem; padding: 0.4rem 0.5rem;
+      background: none; border: 1.5px solid #ccc;
+      border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+      color: #999; cursor: pointer; text-align: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .unconfirm-btn:hover { border-color: #d63082; color: #d63082; }
+    /* My trips inline travel guide */
+    .mytrip-tg {
+      padding: 0.9rem 1.1rem;
+      background: #f7f5ea;
+      border-top: 1px solid #ddd8b0;
+      font-size: 0.8rem;
+    }
+    .mytrip-tg-loading { color: #888; font-size: 0.82rem; }
+    .mytrip-card { border-left: 4px solid #d63082; }
+    .calendar-card-btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.3rem;
+      padding: 0.4rem 0.5rem;
+      background: #fff;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #333;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .calendar-card-btn:hover { border-color: #7a6800; color: #7a6800; background: #f7f4e8; }
+
+    /* Travel guide */
+    .travelguide-btn {
+      display: block; width: 100%; margin-top: 0.3rem;
+      padding: 0.4rem 0.5rem; background: #f0f4ff;
+      border: 1.5px solid #b8a850; border-radius: 7px;
+      font-size: 0.72rem; font-weight: 600; color: #4f4300;
+      text-align: center; cursor: pointer; transition: background 0.15s;
+    }
+    .travelguide-btn:hover { background: #ede8c8; }
+    .travelguide-panel {
+      margin-top: 0.5rem; padding: 0.85rem 1rem; background: #f7f5ea;
+      border: 1px solid #ddd8b0; border-radius: 8px; font-size: 0.8rem;
+    }
+    .tg-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 1.2rem;
+    }
+    .tg-col-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4f4300;
+      margin-bottom: 0.4rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 2px solid #ddd8b0;
+    }
+    .tg-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.18rem 0;
+      border-bottom: 1px solid #eee;
+    }
+    .tg-row:last-of-type { border-bottom: none; }
+    .tg-label { color: #666; white-space: nowrap; flex-shrink: 0; }
+    .tg-value { font-weight: 700; color: #1a1a2e; text-align: right; }
+    .tg-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.65rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #ddd8b0;
+    }
+    .tg-cal-btn {
+      background: #4f4300; color: #fff;
+      border: none; border-radius: 7px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tg-cal-btn:hover { background: #6b5800; }
+    .tg-maps { display: block; margin-top: 0.5rem; text-align: center; color: #4f4300; font-weight: 600; text-decoration: none; }
+    .tg-maps:hover { text-decoration: underline; }
+
+    /* Airline footer */
+    .card-footer {
+      padding: 0.4rem 1rem 0.55rem 4.5rem;
+      font-size: 0.78rem;
+      color: #888;
+      font-weight: 400;
+    }
+
+    /* ── Nearby dates price strip ── */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111;
+      margin: 2rem 0 0.75rem;
+    }
+
+    .price-strip {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .strip-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #888;
+      margin-bottom: 0.75rem;
+    }
+    .strip-pills {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .price-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-width: 90px;
+    }
+    .price-pill:hover { border-color: #7a6800; background: #f5f2e5; }
+    .price-pill.selected {
+      border-color: #7a6800;
+      background: #f7f4e8;
+    }
+    .pill-date {
+      font-size: 0.78rem;
+      color: #555;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .pill-price {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #111;
+      margin-top: 0.2rem;
+    }
+    .price-pill.selected .pill-price { color: #7a6800; }
+
+    /* ── Rental cars ── */
+    /* Best deals scanner */
+    .deals-section { margin-top: 2.5rem; }
+    .deals-scan-btn {
+      background: #4f4300; color: #fff; border: none; border-radius: 8px;
+      padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .deals-scan-btn:hover { background: #6b5800; }
+    .deals-scan-btn:disabled { background: #aaa; cursor: not-allowed; }
+    .deals-grid { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+    .deal-card {
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
+      padding: 1.25rem; min-width: 260px; flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .deal-route { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; }
+    .deal-dates { font-size: 0.85rem; color: #666; margin: 0.3rem 0; }
+    .deal-price { font-size: 2rem; font-weight: 800; color: #1a1a2e; margin: 0.5rem 0; }
+    .deal-airline { font-size: 0.8rem; color: #888; }
+    .deal-book-btn {
+      display: block; margin-top: 0.75rem; background: #e91e8c; color: #fff;
+      border: none; border-radius: 8px; padding: 0.5rem 1rem;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      text-align: center; font-size: 0.9rem;
+    }
+    .rental-section { margin-top: 2rem; }
+    .rental-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .rental-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .rental-airport {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #111;
+    }
+    .rental-dates {
+      font-size: 0.78rem;
+      color: #888;
+    }
+    .rental-btn {
+      display: inline-block;
+      margin-top: 0.3rem;
+      padding: 0.55rem 1rem;
+      background: #e8430a;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 8px;
+      text-decoration: none;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+    .rental-btn:hover { opacity: 0.85; }
+
+    /* Loading / error */
+    .loading { text-align: center; padding: 3rem; color: #8a99b0; }
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid #e2e6ef;
+      border-top-color: #4f4300;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-card {
+      background: #fff5f5;
+      border: 1.5px solid #fca5a5;
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      margin-bottom: 0.75rem;
+      color: #b91c1c;
+      font-size: 0.88rem;
+    }
+    .no-flights-card {
+      background: #fff;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.6rem;
+    }
+    .no-flights-title {
+      font-size: 0.95rem; font-weight: 700; color: #555; margin-bottom: 0.6rem;
+    }
+    .nearby-section { margin-top: 0.5rem; }
+    .nearby-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #999; margin-bottom: 0.35rem;
+    }
+    .nearby-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
+    .nearby-chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      border: 1.5px solid #d0d7e2; border-radius: 7px;
+      padding: 0.25rem 0.65rem; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; background: #fff; color: #333;
+      transition: all 0.15s;
+    }
+    .nearby-chip:hover { border-color: #4f4300; color: #4f4300; background: #f7f5ea; }
+    .nearby-chip.picked { border-color: #4f4300; background: #4f4300; color: #fff; }
+    .nearby-dist { font-size: 0.7rem; opacity: 0.7; }
+    .nearby-retry-btn {
+      margin-top: 0.65rem;
+      background: #4f4300; color: #fff; border: none;
+      border-radius: 8px; padding: 0.5rem 1.1rem;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nearby-retry-btn:hover { background: #6b5800; }
+    .nearby-retry-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── Airport picker ── */
+    .ap-wrap { position: relative; }
+    .ap-box {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      min-height: 46px; padding: 0.4rem 0.75rem;
+      border: 1.5px solid #d0d7e2; border-radius: 10px;
+      background: #f8fafc; cursor: pointer;
+      transition: border-color 0.2s;
+      user-select: none;
+    }
+    .ap-box.focused { border-color: #4f4300; background: #fff; }
+    .ap-placeholder { color: #aaa; font-size: 0.95rem; }
+    .ap-chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: #4f4300; color: #fff;
+      border-radius: 6px; padding: 0.22rem 0.55rem;
+      font-size: 0.82rem; font-weight: 700; white-space: nowrap;
+    }
+    .ap-chip-remove {
+      background: none; border: none; color: #fff;
+      cursor: pointer; font-size: 1rem; line-height: 1;
+      padding: 0; opacity: 0.7;
+    }
+    .ap-chip-remove:hover { opacity: 1; }
+
+    .ap-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff; border: 1.5px solid #d0d7e2;
+      border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+      z-index: 500; display: none; overflow: hidden;
+    }
+    .ap-dropdown.open { display: block; }
+
+    .ap-search-wrap {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid #eee;
+      background: #fff;
+      position: sticky; top: 0;
+    }
+    .ap-search-icon { font-size: 1rem; color: #aaa; flex-shrink: 0; }
+    .ap-search {
+      flex: 1; border: none; outline: none;
+      font-size: 0.97rem; color: #1a1a2e; background: transparent;
+    }
+    .ap-search::placeholder { color: #bbb; }
+    .ap-list { max-height: 240px; overflow-y: auto; }
+
+    .ap-option {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0.9rem; cursor: pointer;
+      transition: background 0.1s;
+    }
+    .ap-option:hover, .ap-option.active { background: #f7f5ea; }
+    .ap-option.selected { background: #fdf9ee; }
+    .ap-flag { font-size: 1.25rem; flex-shrink: 0; }
+    .ap-iata { font-size: 0.88rem; font-weight: 800; color: #4f4300; width: 38px; flex-shrink: 0; }
+    .ap-info { flex: 1; min-width: 0; }
+    .ap-city { font-size: 0.9rem; font-weight: 600; color: #111; }
+    .ap-name { font-size: 0.75rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ap-check { font-size: 1rem; color: #4f4300; width: 20px; text-align: center; font-weight: 700; }
+    .ap-no-results { padding: 0.85rem 1rem; color: #999; font-size: 0.88rem; }
+
+    @media (max-width: 600px) {
+      .fields, .dates-row { grid-template-columns: 1fr; }
+      .row-times { font-size: 1rem; }
+      .row-direct, .row-duration { width: 55px; font-size: 0.78rem; }
+      .card-price { width: 90px; }
+      .price-amount { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="/static/udra-logo.png" alt="UDRA Studio" class="udra-logo" />
+  <p>Your all-in-one travel planner</p>
+</header>
+
+<div class="search-wrap">
+  <div class="search-card">
+
+    <div class="trip-toggle">
+      <button class="trip-btn active" id="btn-roundtrip" onclick="setTrip('roundtrip')">Round-trip</button>
+      <button class="trip-btn"        id="btn-oneway"    onclick="setTrip('oneway')">One-way</button>
+    </div>
+
+    <div class="fields">
+      <div class="field">
+        <label>From</label>
+        <div class="ap-wrap" id="ap-from-wrap">
+          <div class="ap-box" id="ap-from-box" onclick="apFocus('from')">
+            <span class="ap-placeholder" id="ap-from-ph" style="display:none">Select departure airports…</span>
+          </div>
+          <div class="ap-dropdown" id="ap-from-drop">
+            <div class="ap-search-wrap">
+              <span class="ap-search-icon">🔍</span>
+              <input class="ap-search" id="ap-from-search" placeholder="Search city or airport…" autocomplete="off"
+                oninput="apFilter('from')" onkeydown="apKey(event,'from')" />
+            </div>
+            <div class="ap-list" id="ap-from-list"></div>
+          </div>
+        </div>
+        <input type="hidden" id="origins" value="BRU,EIN,AMS,NRN" />
+      </div>
+      <div class="field">
+        <label>To</label>
+        <div class="ap-wrap" id="ap-to-wrap">
+          <div class="ap-box" id="ap-to-box" onclick="apFocus('to')">
+            <span class="ap-placeholder" id="ap-to-ph" style="display:none">Select destination airports…</span>
+          </div>
+          <div class="ap-dropdown" id="ap-to-drop">
+            <div class="ap-search-wrap">
+              <span class="ap-search-icon">🔍</span>
+              <input class="ap-search" id="ap-to-search" placeholder="Search city or airport…" autocomplete="off"
+                oninput="apFilter('to')" onkeydown="apKey(event,'to')" />
+            </div>
+            <div class="ap-list" id="ap-to-list"></div>
+          </div>
+        </div>
+        <input type="hidden" id="destinations" value="OPO,SCQ" />
+      </div>
+    </div>
+
+    <div class="dates-row">
+      <div class="field">
+        <label>Departure</label>
+        <input type="date" id="depart_date" value="2026-04-14" />
+      </div>
+      <div class="field" id="return-row" style="display:block">
+        <label>Return</label>
+        <input type="date" id="return_date" value="2026-04-18" />
+      </div>
+    </div>
+
+    <button class="search-btn" id="search-btn" onclick="doSearch()">Search flights</button>
+
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" id="tab-search" onclick="showTab('search')">Search results</button>
+  <button class="tab-btn" id="tab-trips" onclick="showTab('trips')">My trips <span class="tab-badge" id="trips-count" style="display:none">0</span></button>
+</div>
+
+<div class="results-wrap" id="results"></div>
+<div class="mytrips-wrap" id="mytrips"></div>
+
+<div id="share-bar">
+  <span class="share-count" id="share-count">0 selected</span>
+  <button class="share-btn" id="gmail-btn" onclick="shareSelected('email')">✉️ Gmail</button>
+  <button class="share-btn" id="copy-btn" onclick="shareSelected('copy')">📸 Share flight card</button>
+  <button class="share-clear" onclick="clearSelection()" title="Clear">✕</button>
+</div>
+
+<!-- Best Deals Scanner -->
+<div class="deals-section">
+  <button class="deals-scan-btn" id="scanBtn" onclick="scanDeals()">
+    🔍 Scan cheapest deals — next 3 months
+  </button>
+  <div id="deals-results"></div>
+</div>
+
+<script>
+  let tripType = "roundtrip";
+
+  // Cabin bag fee per airline (€). 0 = included in fare.
+  const CABIN_BAG_FEE = {
+    "ryanair":           35,
+    "easyjet":           26,
+    "wizz air":          22,
+    "vueling":           24,
+    "transavia":         18,
+    "tap air portugal":   0,
+    "tap portugal":       0,
+    "klm":                0,
+    "brussels airlines":  0,
+    "lufthansa":          0,
+    "iberia":             0,
+    "air europa":         0,
+  };
+
+  // Parkos.nl airport slugs (departure airports — where you park your car)
+  const PARKOS_SLUGS = {
+    "AMS": "parkeren-schiphol",
+    "BRU": "parkeren-brussel-zaventem",
+    "CRL": "parkeren-brussel-charleroi",
+    "EIN": "parkeren-eindhoven-airport",
+    "NRN": "parkeren-weeze",
+    "OPO": "parkeren-porto-airport",
+    "SCQ": "parkeren-santiago-de-compostela",
+  };
+
+  function buildParkosUrl(originIata, departDate, departTime, returnDate, returnArrTime) {
+    const slug = PARKOS_SLUGS[originIata];
+    if (!slug) return null;
+    // arrivalTime = when you arrive at parking (≈ flight dep time, already at airport)
+    // departureTime = when you pick up car (≈ return flight arrival time)
+    const arrTime  = departTime   ? departTime.replace(/\s*(AM|PM)/i,"").trim().substring(0,5) : "08:00";
+    const doTime   = returnArrTime ? returnArrTime.replace(/\s*(AM|PM)/i,"").trim().substring(0,5) : "12:00";
+    const p = new URLSearchParams({
+      location:      slug,
+      arrival:       departDate,
+      departure:     returnDate || departDate,
+      arrivalTime:   arrTime,
+      departureTime: doTime,
+      sort_f: "prs",
+      sort_w: "asc",
+    });
+    return `https://www.parkos.nl/${slug}/zoeken?${p}`;
+  }
+
+  // Airport data for rentalcars.com (name must match their database, coords required)
+  const AIRPORTS = {
+    "OPO": { name: "Porto Airport",                      coords: "41.236698150634766,-8.670960426330566" },
+    "LIS": { name: "Lisbon Humberto Delgado Airport",    coords: "38.781311035156,-9.135921478271" },
+    "FAO": { name: "Faro Airport",                       coords: "37.014453,-7.965911" },
+    "SCQ": { name: "Santiago de Compostela Airport",     coords: "42.896388,-8.415139" },
+    "MAD": { name: "Madrid Barajas Airport",             coords: "40.471926,-3.56264" },
+    "BCN": { name: "Barcelona El Prat Airport",          coords: "41.297078,2.078464" },
+    "AMS": { name: "Amsterdam Airport Schiphol",         coords: "52.308601,4.763889" },
+    "BRU": { name: "Brussels Airport",                   coords: "50.901402,4.48444" },
+    "EIN": { name: "Eindhoven Airport",                  coords: "51.450101,5.37452" },
+    "NRN": { name: "Weeze Airport",                      coords: "51.602402,6.14217" },
+    "CRL": { name: "Brussels South Charleroi Airport",   coords: "50.459202,4.45382" },
+  };
+
+  function airlineBookingUrl(r, depart_date, return_date) {
+    const a = (r.airline || "").toLowerCase();
+    const o = r.dep_airport || r.origin;
+    const d = r.arr_airport || r.destination;
+    const dep = depart_date, ret = return_date;
+    const isRT = !!ret;
+    const bookingFallback = (() => {
+      if (a.includes("ryanair")) {
+        const q = `${o} to ${d} ${dep}${isRT ? ` return ${ret}` : ""}`;
+        return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}`;
+      }
+      const p = new URLSearchParams({ type: isRT ? "ROUNDTRIP" : "ONEWAY", adults:1, cabinClass:"ECONOMY", from:o, to:d, fromDate:dep });
+      if (isRT) p.set("toDate", ret);
+      return `https://www.booking.com/flights/search.html?${p}`;
+    })();
+
+    if (a.includes("transavia")) {
+      const p = new URLSearchParams({ departureStation:o, arrivalStation:d, outboundDate:dep, adults:1 });
+      if (isRT) p.set("returnDate", ret);
+      return `https://www.transavia.com/book/en-eu/search-a-flight?${p}`;
+    }
+    if (r.booking_token) {
+      return `/booking_link?token=${encodeURIComponent(r.booking_token)}&fallback=${encodeURIComponent(bookingFallback)}`;
+    }
+    return bookingFallback;
+  }
+
+  function parseTime(timeStr) {
+    if (!timeStr || typeof timeStr !== "string") return null;
+    // Handles: "8:30 PM", "08:30", "2026-04-14 08:30", "8:30AM"
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!match) return null;
+    let hour = parseInt(match[1]);
+    const minute = parseInt(match[2]);
+    const period = match[3];
+    if (period) {
+      if (/PM/i.test(period) && hour !== 12) hour += 12;
+      if (/AM/i.test(period) && hour === 12) hour = 0;
+    }
+    return { hour, minute };
+  }
+
+  function timeAddMin(timeStr, mins) {
+    const t = parseTime(timeStr);
+    if (!t) return { hour: 10, minute: 0 };
+    const total = t.hour * 60 + t.minute + mins;
+    return { hour: Math.floor(total / 60) % 24, minute: total % 60 };
+  }
+
+  function timeSubMin(timeStr, mins) {
+    const t = parseTime(timeStr);
+    if (!t) return { hour: 9, minute: 0 };
+    let total = t.hour * 60 + t.minute - mins;
+    if (total < 0) total += 24 * 60;
+    return { hour: Math.floor(total / 60), minute: total % 60 };
+  }
+
+  function buildRentalUrl(iata, puDate, puTime, doDate, doTime) {
+    const airport = AIRPORTS[iata] || { name: iata + " Airport", coords: "" };
+    const pu  = new Date(puDate + "T00:00:00");
+    const doo = new Date(doDate  + "T00:00:00");
+    const p   = new URLSearchParams();
+    p.append("location",          "");
+    p.append("dropLocation",      "");
+    p.append("locationName",      airport.name);
+    p.append("locationIata",      iata);
+    p.append("dropLocationName",  airport.name);
+    p.append("dropLocationIata",  iata);
+    if (airport.coords) {
+      p.append("coordinates",     airport.coords);
+      p.append("dropCoordinates", airport.coords);
+    }
+    p.append("driversAge",  "30");
+    p.append("puDay",    pu.getDate());
+    p.append("puMonth",  pu.getMonth() + 1);
+    p.append("puYear",   pu.getFullYear());
+    p.append("puMinute", puTime.minute);
+    p.append("puHour",   puTime.hour);
+    p.append("doDay",    doo.getDate());
+    p.append("doMonth",  doo.getMonth() + 1);
+    p.append("doYear",   doo.getFullYear());
+    p.append("doMinute", doTime.minute);
+    p.append("doHour",   doTime.hour);
+    p.append("ftsType",     "A");
+    p.append("dropFtsType", "A");
+    return `https://www.rentalcars.com/search-results?${p.toString().replace(/\+/g, "%20")}`;
+  }
+
+  function rentalUrlForFlight(r, depart_date, return_date) {
+    const puTime = { hour: r.pu_hour ?? 10, minute: r.pu_minute ?? 0 };
+    const doTime = { hour: r.do_hour ?? 9,  minute: r.do_minute ?? 0 };
+    return buildRentalUrl(r.destination, depart_date, puTime, return_date || depart_date, doTime);
+  }
+
+  function cabinBagFee(airline) {
+    const key = (airline || "").toLowerCase();
+    for (const [name, fee] of Object.entries(CABIN_BAG_FEE)) {
+      if (key.includes(name)) return fee;
+    }
+    return null; // unknown airline
+  }
+
+  function toGCalDT(dateStr, timeStr) {
+    const t = parseTime(timeStr);
+    if (!t || !dateStr) return null;
+    const [y, m, d] = dateStr.split("-");
+    return `${y}${m}${d}T${String(t.hour).padStart(2,"0")}${String(t.minute).padStart(2,"0")}00`;
+  }
+
+  async function openCalendar(btn) {
+    btn.textContent = "⏳";
+    btn.disabled = true;
+
+    // Open blank window NOW — while still inside the user-gesture context.
+    // Popup blockers allow window.open() only synchronously from a click.
+    const win = window.open("about:blank", "_blank");
+
+    const d = btn.dataset;
+    const r = {
+      origin: d.origin, destination: d.dest,
+      dep_time: d.deptime, arr_time: d.arrtime,
+      ret_dep_time: d.retdep, ret_arr_time: d.retarr,
+      price: d.price, airline: d.airline,
+    };
+    const depart_date = d.dep;
+    const return_date = d.ret || "";
+
+    let tg = null;
+    try {
+      const params = new URLSearchParams({
+        dep_airport: r.origin, dep_time: r.dep_time, dep_date: depart_date,
+        arr_airport: r.destination,
+        ret_dep_time: r.ret_dep_time || "",
+        ret_dep_date: return_date || "",
+      });
+      const res = await fetch(`/travel_guide?${params}`);
+      tg = await res.json();
+    } catch(e) { /* proceed without travel guide */ }
+
+    const leaveTime = tg?.outbound?.leave  || r.dep_time;
+    const depStart  = toGCalDT(depart_date, leaveTime);
+    const depEnd    = toGCalDT(depart_date, r.arr_time) || toGCalDT(depart_date, r.dep_time);
+    const retEnd    = return_date && r.ret_arr_time ? toGCalDT(return_date, r.ret_arr_time) : null;
+    const endDT     = retEnd || depEnd;
+
+    const fmtDate = s => { if (!s) return ""; const [y,m,dd] = s.split("-"); return `${dd} ${DUTCH_MONTHS[+m-1]}`; };
+
+    const lines = [`✈ VLUCHT ${r.origin} → ${r.destination}`, r.airline, ""];
+    if (tg?.outbound) {
+      const o = tg.outbound;
+      lines.push(`HEEN — ${fmtDate(depart_date)}`);
+      lines.push(`🏠 Vertrek thuis:          ${o.leave}`);
+      lines.push(`🚗 Aankomst ${o.dep_airport_name}: ${o.arrive_airport}`);
+      lines.push(`🛫 Vertrek:                ${o.departure}`);
+      if (r.arr_time) lines.push(`🛬 Aankomst ${o.arr_airport_name}: ${r.arr_time}`);
+    } else {
+      lines.push(`HEEN — ${fmtDate(depart_date)}`);
+      lines.push(`🛫 Vertrek: ${r.dep_time}`);
+      if (r.arr_time) lines.push(`🛬 Aankomst: ${r.arr_time}`);
+    }
+    if (return_date && (tg?.return || r.ret_dep_time)) {
+      lines.push("");
+      lines.push(`TERUG — ${fmtDate(return_date)}`);
+      if (tg?.return) {
+        const rv = tg.return;
+        lines.push(`🏠 Vertrek Spanje:         ${rv.leave}`);
+        lines.push(`🚗 Aankomst ${rv.dep_airport_name}: ${rv.arrive_airport}`);
+        lines.push(`🛫 Vertrek:                ${rv.departure}`);
+        if (r.ret_arr_time) lines.push(`🛬 Aankomst ${rv.arr_airport_name}: ${r.ret_arr_time}`);
+      } else {
+        lines.push(`🛫 Vertrek: ${r.ret_dep_time}`);
+        if (r.ret_arr_time) lines.push(`🛬 Aankomst: ${r.ret_arr_time}`);
+      }
+    }
+
+    const title = `✈ ${r.origin} ↔ ${r.destination}`;
+    const p = new URLSearchParams({
+      action: "TEMPLATE", text: title,
+      dates: `${depStart}/${endDT}`,
+      details: lines.join("\n"),
+      location: `${r.origin} Airport`,
+    });
+
+    // Navigate the already-open window to the calendar URL
+    win.location = `https://calendar.google.com/calendar/render?${p}`;
+
+    btn.textContent = "📅 Agenda";
+    btn.disabled = false;
+  }
+
+  function setTrip(type) {
+    tripType = type;
+    document.getElementById("btn-oneway").classList.toggle("active", type === "oneway");
+    document.getElementById("btn-roundtrip").classList.toggle("active", type === "roundtrip");
+    document.getElementById("return-row").style.display = type === "roundtrip" ? "block" : "none";
+  }
+
+  function initials(name) {
+    return name.split(" ").map(w => w[0] || "").join("").slice(0, 3).toUpperCase();
+  }
+
+  async function doSearch() {
+    const origins      = document.getElementById("origins").value.trim();
+    const destinations = document.getElementById("destinations").value.trim();
+    const depart_date  = document.getElementById("depart_date").value;
+    const return_date  = document.getElementById("return_date").value;
+
+    if (!origins || !destinations || !depart_date) {
+      alert("Please fill in origins, destinations, and departure date.");
+      return;
+    }
+
+    const btn = document.getElementById("search-btn");
+    btn.disabled = true;
+    btn.textContent = "Searching…";
+
+    document.getElementById("results").innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        Searching all combinations in parallel…
+      </div>`;
+
+    try {
+      const res = await fetch("/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origins, destinations, depart_date,
+          return_date: tripType === "roundtrip" ? return_date : null
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("results").innerHTML = `<div class="error-card">⚠ ${data.error}</div>`;
+        return;
+      }
+      renderAll(data);
+      showTab("search");
+    } catch(e) {
+      document.getElementById("results").innerHTML = `<div class="error-card">⚠ JS Error: ${e.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Search flights";
+    }
+  }
+
+  const DUTCH_DAYS  = ["zo","ma","di","wo","do","vr","za"];
+  const DUTCH_MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+
+  function formatDateSmall(dateStr) {
+    if (!dateStr) return "";
+    const d   = new Date(dateStr + "T00:00:00");
+    const day = DUTCH_DAYS[d.getDay()];
+    return `${day} ${d.getDate()} ${DUTCH_MONTHS[d.getMonth()]}`;
+  }
+
+  function buildFlightRow(depTime, arrTime, origin, dest, airline, isDirect, stopLabel, duration, date) {
+    const times = (depTime && arrTime) ? `${depTime} – ${arrTime}` : depTime || "—";
+    const route = `${origin} – ${dest}`;
+    const dateLabel = date ? `<span class="row-date-label">${formatDateSmall(date)}</span>` : "";
+    return `
+      <div class="flight-row">
+        <div class="row-check"><input type="checkbox" onclick="toggleCard(this.closest('.flight-card'))" /></div>
+        <div class="row-logo">${initials(airline)}</div>
+        <div class="row-info">
+          <div class="row-times">${times}${dateLabel}</div>
+          <div class="row-cities">${route}</div>
+        </div>
+        <div class="row-direct${isDirect ? "" : " stops"}">${stopLabel}</div>
+        <div class="row-duration">${duration}</div>
+      </div>`;
+  }
+
+  function buildCard(r, depart_date, return_date) {
+    const isDirect  = r.stops === 0;
+    const stopLabel = isDirect ? "direct" : `${r.stops} stop${r.stops > 1 ? "s" : ""}`;
+    const outbound  = buildFlightRow(r.dep_time, r.arr_time, r.origin, r.destination, r.airline, isDirect, stopLabel, r.duration, depart_date);
+    const inbound   = r.ret_dep_time
+      ? buildFlightRow(r.ret_dep_time, r.ret_arr_time, r.destination, r.origin, r.airline, isDirect, stopLabel, r.duration, return_date)
+      : "";
+    return outbound + inbound;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d   = new Date(dateStr + "T00:00:00");
+    const day = DUTCH_DAYS[d.getDay()];
+    return `${day} ${d.getDate()} ${DUTCH_MONTHS[d.getMonth()]}`;
+  }
+
+  function priceStrip(prices, label) {
+    if (!prices || prices.length === 0) return "";
+    const pills = prices.map(p => `
+      <div class="price-pill${p.selected ? " selected" : ""}">
+        <div class="pill-date">${formatDate(p.date)}</div>
+        <div class="pill-price">€ ${p.price}</div>
+      </div>`).join("");
+    return `
+      <div class="price-strip">
+        <div class="strip-label">${label}</div>
+        <div class="strip-pills">${pills}</div>
+      </div>`;
+  }
+
+  function renderAll(data) {
+    document.getElementById("results")._lastData = data; // store for re-render after confirm/unconfirm
+    const { results, dep_prices, ret_prices, depart_date, return_date } = data;
+    const valid  = results.filter(r => !r.error);
+    const failed = results.filter(r =>  r.error);
+
+    let html = "";
+
+    // ── Section 1: flights on searched date ──
+    if (valid.length) {
+      const label = return_date
+        ? `Flights on ${formatDate(depart_date)} → ${formatDate(return_date)}`
+        : `Flights on ${formatDate(depart_date)}`;
+      html += `<div class="results-meta">
+        <strong>${label}</strong>
+        <span>${valid.length} result${valid.length !== 1 ? "s" : ""} · sorted by shortest duration</span>
+      </div>`;
+    }
+
+    const minPrice = Math.min(...valid.map(v => v.price || Infinity));
+
+    valid.forEach((r, i) => {
+      const isBest     = i === 0;
+      const isCheapest = r.price === minPrice;
+      const tripKey = `${r.origin}-${r.destination}-${depart_date}`;
+      const badges = isFlightBooked(tripKey)
+        ? `<span class="badge badge-booked">✓ Booked</span>`
+        : [
+            isBest     ? `<span class="badge badge-best">Best option</span>`  : "",
+            isCheapest ? `<span class="badge badge-cheapest">Cheapest</span>` : "",
+          ].join("");
+
+      const cardData = encodeURIComponent(JSON.stringify({
+        origin: r.origin, destination: r.destination,
+        dep_airport: r.dep_airport || r.origin, arr_airport: r.arr_airport || r.destination,
+        dep_time: r.dep_time, arr_time: r.arr_time,
+        ret_dep_time: r.ret_dep_time || "", ret_arr_time: r.ret_arr_time || "",
+        depart_date, return_date: return_date || "",
+        price: r.price, airline: r.airline, stops: r.stops || 0, duration: r.duration || "",
+        booking_url: airlineBookingUrl(r, depart_date, return_date),
+      }));
+
+      html += `
+        <div class="flight-card" data-card='${cardData}'>
+          <div class="card-topbar">
+            <div class="topbar-left">
+              <button class="icon-btn">♡</button>
+              <button class="icon-btn" onclick="toggleCard(this.closest('.flight-card'))">↗</button>
+            </div>
+            <div class="topbar-center">${badges}</div>
+            <div class="topbar-right">
+              <div class="luggage-btn"><span>🧳</span> 0</div>
+              <div class="luggage-btn"><span>🎒</span> 0</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-flights">${buildCard(r, depart_date, return_date)}</div>
+            <div class="card-price">
+              <div class="price-amount">€ ${r.price ?? "—"}</div>
+              ${(() => {
+                const fee = cabinBagFee(r.airline);
+                if (fee === 0)   return `<div class="price-tier">Basic (cabin bag incl.)</div>`;
+                if (fee !== null && r.price != null)
+                                 return `<div class="price-tier">Basic (+1 tas)</div>`;
+                return           `<div class="price-tier">Basic</div>`;
+              })()}
+              ${(() => {
+                const tripKey = `${r.origin}-${r.destination}-${depart_date}`;
+                const booked  = isFlightBooked(tripKey);
+                return booked
+                  ? `<button class="unconfirm-btn" onclick="unconfirmFlight('${tripKey}')">✗ Unconfirm</button>`
+                  : `<a class="bekijk-deal-btn" href="${airlineBookingUrl(r, depart_date, return_date)}" target="_blank" onclick="confirmFlight(event, this.closest('.flight-card'))">Book</a>`;
+              })()}
+              <button class="travelguide-btn" onclick="loadTravelGuide(this, '${r.dep_airport||r.origin}', '${r.dep_time}', '${depart_date}', '${r.arr_airport||r.destination}', '${r.arr_time||''}', '${r.ret_dep_time||''}', '${r.ret_arr_time||''}', '${return_date||''}')">🗺 Travel guide</button>
+              <div class="travelguide-panel" style="display:none"></div>
+            </div>
+          </div>
+          <div class="card-footer">${r.airline}</div>
+        </div>`;
+    });
+
+    failed.forEach(r => {
+      const oName = (AP_LIST.find(a => a.iata === r.origin)?.city)      || r.origin;
+      const dName = (AP_LIST.find(a => a.iata === r.destination)?.city) || r.destination;
+      const errLower = (r.error || "").toLowerCase();
+      const isNoFlights = errLower.includes("no flight") || errLower.includes("no results") || errLower.includes("hasn't returned") || errLower.includes("not found");
+      if (!isNoFlights) {
+        html += `<div class="error-card">⚠ ${oName} (${r.origin}) → ${dName} (${r.destination}): ${r.error}</div>`;
+        return;
+      }
+      const nearO = nearbyAirports(r.origin).filter(a => !apState.from.selected.includes(a.iata));
+      const nearD = nearbyAirports(r.destination).filter(a => !apState.to.selected.includes(a.iata));
+      const nearOChips = nearO.map(a =>
+        `<span class="nearby-chip" data-side="from" data-iata="${a.iata}" onclick="toggleNearbyChip(this)">
+          ${a.flag} ${a.iata} <span class="nearby-dist">${a.distKm}km</span>
+        </span>`).join("");
+      const nearDChips = nearD.map(a =>
+        `<span class="nearby-chip" data-side="to" data-iata="${a.iata}" onclick="toggleNearbyChip(this)">
+          ${a.flag} ${a.iata} <span class="nearby-dist">${a.distKm}km</span>
+        </span>`).join("");
+      html += `
+        <div class="no-flights-card">
+          <div class="no-flights-title">✈ No flights found &nbsp;·&nbsp; ${oName} (${r.origin}) → ${dName} (${r.destination})</div>
+          ${nearO.length ? `<div class="nearby-section">
+            <div class="nearby-label">Nearby departure airports</div>
+            <div class="nearby-chips">${nearOChips}</div>
+          </div>` : ""}
+          ${nearD.length ? `<div class="nearby-section">
+            <div class="nearby-label">Nearby destination airports</div>
+            <div class="nearby-chips">${nearDChips}</div>
+          </div>` : ""}
+          ${(nearO.length || nearD.length) ? `<button class="nearby-retry-btn" onclick="addNearbyAndSearch(this)">🔍 Add selected & search again</button>` : ""}
+        </div>`;
+    });
+
+    // ── Section 2: nearby date prices ──
+    if ((dep_prices && dep_prices.length > 0) || (ret_prices && ret_prices.length > 0)) {
+      html += `<div class="section-title">Nearby dates — best price per day</div>`;
+      html += priceStrip(dep_prices, "Departure");
+      if (ret_prices && ret_prices.length > 0) {
+        html += priceStrip(ret_prices, "Return");
+      }
+    }
+
+    // ── Section 3: rental cars ──
+    const destList = [...new Set(results.map(r => r.destination).filter(Boolean))];
+    if (destList.length > 0 && depart_date) {
+      const dropoff = return_date || depart_date;
+      html += `<div class="section-title rental-section">Rental cars at destination</div><div class="rental-grid">`;
+      destList.forEach(iata => {
+        const url = buildRentalUrl(iata, depart_date, { hour: 10, minute: 0 }, dropoff, { hour: 9, minute: 0 });
+        const airportLabel = (AIRPORTS[iata] && AIRPORTS[iata].name) || iata + " Airport";
+        html += `
+          <div class="rental-card">
+            <div class="rental-airport">🚗 ${airportLabel}</div>
+            <div class="rental-dates">${formatDate(depart_date)}${return_date ? " → " + formatDate(return_date) : ""}</div>
+            <a class="rental-btn" href="${url}" target="_blank">Search on Rentalcars.com</a>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    document.getElementById("results").innerHTML = html || `<div class="error-card">No results found.</div>`;
+  }
+
+  async function loadTravelGuide(btn, depAirport, depTime, depDate, arrAirport, arrTime, retDepTime, retArrTime, retDepDate) {
+    const panel = btn.nextElementSibling;
+    if (panel.style.display === "block") { panel.style.display = "none"; return; }
+    btn.textContent = "⏳ Loading…";
+    btn.disabled = true;
+    try {
+      const params = new URLSearchParams({ dep_airport:depAirport, dep_time:depTime, dep_date:depDate, arr_airport:arrAirport, ret_dep_time:retDepTime, ret_dep_date:retDepDate });
+      const res  = await fetch(`/travel_guide?${params}`);
+      const data = await res.json();
+      const fmtDate = s => { if (!s) return ""; const [y,m,d] = s.split("-"); const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${d} ${M[+m-1]}`; };
+      const row = (label, value) => value
+        ? `<div class="tg-row"><span class="tg-label">${label}</span><span class="tg-value">${value}</span></div>`
+        : "";
+
+      let leftCol = "", rightCol = "";
+
+      if (data.outbound) {
+        const o = data.outbound;
+        leftCol = `
+          <div class="tg-col-title">✈ Leave &nbsp;·&nbsp; ${fmtDate(o.date)}</div>
+          ${row("🏠 Leave home",    o.leave)}
+          ${row("🚗 Arrive " + o.dep_airport_name, o.arrive_airport)}
+          ${row("🛫 Departure",     o.departure)}
+          ${arrTime ? row("🛬 Arrive " + o.arr_airport_name, arrTime) : ""}`;
+      }
+
+      if (data.return) {
+        const r = data.return;
+        rightCol = `
+          <div class="tg-col-title">✈ Return &nbsp;·&nbsp; ${fmtDate(r.date)}</div>
+          ${row("🏠 Leave Spain",   r.leave)}
+          ${row("🚗 Arrive " + r.dep_airport_name, r.arrive_airport)}
+          ${row("🛫 Departure",     r.departure)}
+          ${retArrTime ? row("🛬 Arrive " + r.arr_airport_name, retArrTime) : ""}`;
+      }
+
+      // Calendar button data — passed through to openCalendar via data attrs
+      const calData = JSON.stringify({
+        dep: depDate, ret: retDepDate,
+        origin: depAirport, dest: arrAirport,
+        deptime: depTime, arrtime: arrTime,
+        retdep: retDepTime, retarr: retArrTime,
+        price: "", airline: "",
+      });
+
+      const html = `
+        <div class="tg-cols">
+          <div>${leftCol}</div>
+          <div>${rightCol}</div>
+        </div>
+        <div class="tg-footer">
+          <button class="tg-cal-btn" onclick="openCalendarFromPanel(this)" data-tg='${encodeURIComponent(calData)}'>📅 Add to calendar</button>
+        </div>`;
+      panel.innerHTML = html || `<div style="color:#888">No schedule available</div>`;
+      panel.style.display = "block";
+    } catch(e) {
+      panel.innerHTML = `<div style="color:red">${e.message}</div>`;
+      panel.style.display = "block";
+    } finally {
+      btn.textContent = "🗺 Travel guide";
+      btn.disabled = false;
+    }
+  }
+
+  async function openCalendarFromPanel(btn) {
+    // Proxy: map panel data attrs → card-style data attrs, then call openCalendar
+    const tg = JSON.parse(decodeURIComponent(btn.dataset.tg));
+    // Temporarily set dataset on btn so openCalendar can read it
+    btn.dataset.dep      = tg.dep;
+    btn.dataset.ret      = tg.ret;
+    btn.dataset.origin   = tg.origin;
+    btn.dataset.dest     = tg.dest;
+    btn.dataset.deptime  = tg.deptime;
+    btn.dataset.arrtime  = tg.arrtime;
+    btn.dataset.retdep   = tg.retdep;
+    btn.dataset.retarr   = tg.retarr;
+    btn.dataset.price    = tg.price;
+    btn.dataset.airline  = tg.airline;
+    await openCalendar(btn);
+    btn.textContent = "📅 Calendar";
+  }
+
+  async function scanDeals() {
+    const btn = document.getElementById("scanBtn");
+    btn.disabled = true;
+    btn.textContent = "⏳ Scanning 12 months… this may take a minute";
+    document.getElementById("deals-results").innerHTML = "";
+    try {
+      const res  = await fetch("/scan_best_deals");
+      const data = await res.json();
+      const deals = data.deals || [];
+      if (!deals.length) {
+        document.getElementById("deals-results").innerHTML = `<div class="error-card">No deals found.</div>`;
+      } else {
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const fmtDate = s => { const [y,m,d] = s.split("-"); return `${d} ${months[+m-1]} ${y}`; };
+        const stayDays = (dep, ret) => Math.round((new Date(ret)-new Date(dep))/(1000*60*60*24));
+        let html = `<div class="deals-grid">`;
+        deals.forEach(d => {
+          const bookUrl = d.booking_token
+            ? `/booking_link?token=${encodeURIComponent(d.booking_token)}&fallback=${encodeURIComponent(`https://www.booking.com/flights/search.html?type=ROUNDTRIP&from=${d.origin}&to=${d.destination}&fromDate=${d.depart_date}&toDate=${d.return_date}&adults=1`)}`
+            : `https://www.booking.com/flights/search.html?type=ROUNDTRIP&from=${d.origin}&to=${d.destination}&fromDate=${d.depart_date}&toDate=${d.return_date}&adults=1`;
+          html += `
+            <div class="deal-card">
+              <div class="deal-route">${d.origin} → ${d.destination}</div>
+              <div class="deal-dates">✈ ${fmtDate(d.depart_date)} → ${fmtDate(d.return_date)} &nbsp;·&nbsp; ${stayDays(d.depart_date, d.return_date)} nights</div>
+              <div class="deal-price">€ ${d.price}</div>
+              <div class="deal-airline">${d.airline}${d.dep_time ? " · " + d.dep_time : ""}</div>
+              <a class="deal-book-btn" href="${bookUrl}" target="_blank">Book</a>
+            </div>`;
+        });
+        html += `</div>`;
+        document.getElementById("deals-results").innerHTML = html;
+      }
+    } catch(e) {
+      document.getElementById("deals-results").innerHTML = `<div class="error-card">⚠ ${e.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "🔍 Scan cheapest deals — next 3 months";
+    }
+  }
+
+  // ── Card selection & sharing ──────────────────────────────────
+  function toggleCard(card) {
+    card.classList.toggle("selected");
+    // sync checkboxes inside this card
+    card.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = card.classList.contains("selected"));
+    updateShareBar();
+  }
+
+  function clearSelection() {
+    document.querySelectorAll(".flight-card.selected").forEach(c => {
+      c.classList.remove("selected");
+      c.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+    });
+    updateShareBar();
+  }
+
+  function updateShareBar() {
+    const n   = document.querySelectorAll(".flight-card.selected").length;
+    const bar = document.getElementById("share-bar");
+    document.getElementById("share-count").textContent = `${n} flight${n !== 1 ? "s" : ""} selected`;
+    bar.classList.toggle("visible", n > 0);
+  }
+
+  function formatCard(d) {
+    const M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const fmt = s => { if (!s) return ""; const [y,m,dd] = s.split("-"); return `${dd} ${M[+m-1]}`; };
+    let txt = `✈️ ${d.origin} → ${d.destination}\n`;
+    txt += `📅 ${fmt(d.depart_date)}${d.return_date ? " → " + fmt(d.return_date) : ""}\n`;
+    if (d.dep_time) txt += `🛫 Outbound: ${d.dep_time}${d.arr_time ? " → " + d.arr_time : ""}\n`;
+    if (d.ret_dep_time) txt += `🛬 Return:   ${d.ret_dep_time}${d.ret_arr_time ? " → " + d.ret_arr_time : ""}\n`;
+    txt += `💶 € ${d.price}   |   ${d.airline}\n`;
+    txt += `🔗 ${d.booking_url}`;
+    return txt;
+  }
+
+  function getSelectedData() {
+    return [...document.querySelectorAll(".flight-card.selected")]
+      .map(c => { try { return JSON.parse(decodeURIComponent(c.dataset.card)); } catch { return null; } })
+      .filter(Boolean);
+  }
+
+  async function shareSelected(method) {
+    const cards = getSelectedData();
+    if (!cards.length) return;
+
+    // ── Copy: render card as image and copy to clipboard ─────────
+    if (method === "copy") {
+      const cardNodes = [...document.querySelectorAll(".flight-card.selected")];
+      if (!cardNodes.length) return;
+      const copyBtn = document.getElementById("copy-btn");
+      if (copyBtn) { copyBtn.textContent = "⏳ Rendering…"; copyBtn.disabled = true; }
+      try {
+        const container = document.createElement("div");
+        container.style.cssText = "position:fixed;left:-9999px;top:0;background:#f0f2f5;padding:16px;width:680px;border-radius:12px;";
+        cardNodes.forEach(node => {
+          const clone = node.cloneNode(true);
+          clone.classList.remove("selected");
+          clone.querySelectorAll("input[type=checkbox]").forEach(cb => cb.remove());
+          clone.querySelectorAll(".row-check").forEach(el => el.remove());
+          clone.style.marginBottom = "12px";
+          container.appendChild(clone);
+        });
+        document.body.appendChild(container);
+        const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#f0f2f5", logging: false });
+        document.body.removeChild(container);
+        canvas.toBlob(async (blob) => {
+          // Try server-side clipboard copy first (works in PyWebView / desktop app)
+          let copied = false;
+          try {
+            const b64 = canvas.toDataURL("image/png");
+            const res = await fetch("/copy_image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: b64 }),
+            });
+            const result = await res.json();
+            if (result.ok) { copied = true; }
+          } catch(e) { /* fall through to browser API */ }
+
+          if (!copied) {
+            // Browser clipboard API fallback
+            try {
+              await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+              copied = true;
+            } catch(e) { /* fall through to download */ }
+          }
+
+          if (copied) {
+            showToast("📋 Image copied — paste anywhere with Cmd+V!");
+          } else {
+            downloadPng(canvas);
+            showToast("📥 Image downloaded — attach it manually.");
+          }
+          if (copyBtn) { copyBtn.textContent = "📋 Copy image"; copyBtn.disabled = false; }
+        }, "image/png");
+      } catch(e) {
+        alert("Screenshot failed: " + e.message);
+        if (copyBtn) { copyBtn.textContent = "📋 Copy"; copyBtn.disabled = false; }
+      }
+      return;
+    }
+
+    // ── Gmail: generate HTML email with travel guide, copy to clipboard ──
+    if (method === "email") {
+      const gmailBtn = document.getElementById("gmail-btn");
+      gmailBtn.textContent = "⏳ Preparing…";
+      gmailBtn.disabled = true;
+      const win = window.open("about:blank", "_blank"); // open now before await
+      try {
+        // Fetch travel guide for each card
+        const enriched = await Promise.all(cards.map(async card => {
+          let tg = null;
+          try {
+            const p = new URLSearchParams({
+              dep_airport: card.origin, dep_time: card.dep_time, dep_date: card.depart_date,
+              arr_airport: card.destination, ret_dep_time: card.ret_dep_time || "",
+              ret_dep_date: card.return_date || "",
+            });
+            const r = await fetch(`/travel_guide?${p}`);
+            tg = await r.json();
+          } catch(e) {}
+          return { card, tg };
+        }));
+
+        const html = buildEmailHtml(enriched);
+
+        // Copy HTML to clipboard via server (works in PyWebView)
+        let copied = false;
+        try {
+          const r = await fetch("/copy_html", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ html }),
+          });
+          const result = await r.json();
+          if (result.ok) copied = true;
+        } catch(e) {}
+
+        // Navigate the already-open window to Gmail compose
+        win.location = "https://mail.google.com/mail/?view=cm&fs=1";
+        showToast(copied
+          ? "✉️ Email content copied — press Cmd+V in Gmail compose to paste"
+          : "✉️ Gmail opened — compose your email manually");
+      } catch(e) {
+        win.close();
+        alert("Email failed: " + e.message);
+      }
+      gmailBtn.textContent = "✉️ Gmail";
+      gmailBtn.disabled = false;
+      return;
+    }
+  }
+
+  function buildEmailHtml(enriched) {
+    const M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const fmtDate = s => { if (!s) return ""; const [y,m,d] = s.split("-"); return `${d} ${M[+m-1]} ${y}`; };
+    const row = (label, value) => value ? `
+      <tr>
+        <td style="padding:5px 12px 5px 0;color:#666;font-size:14px;white-space:nowrap;">${label}</td>
+        <td style="padding:5px 0;font-weight:700;font-size:14px;color:#1a1a2e;">${value}</td>
+      </tr>` : "";
+
+    const cards = enriched.map(({ card: c, tg }) => {
+      const outboundRows = tg?.outbound ? [
+        row("🏠 Leave home",              tg.outbound.leave),
+        row("🚗 Arrive " + (tg.outbound.dep_airport_name||c.origin), tg.outbound.arrive_airport),
+        row("🛫 Departure",               tg.outbound.departure),
+        row("🛬 Arrive " + (tg.outbound.arr_airport_name||c.destination), c.arr_time || ""),
+      ].join("") : [
+        row("🛫 Departure", c.dep_time),
+        row("🛬 Arrival",   c.arr_time),
+      ].join("");
+
+      const returnRows = tg?.return ? [
+        row("🏠 Leave Spain",             tg.return.leave),
+        row("🚗 Arrive " + (tg.return.dep_airport_name||c.destination), tg.return.arrive_airport),
+        row("🛫 Departure",               tg.return.departure),
+        row("🛬 Arrive " + (tg.return.arr_airport_name||c.origin), c.ret_arr_time || ""),
+      ].join("") : (c.ret_dep_time ? [
+        row("🛫 Departure", c.ret_dep_time),
+        row("🛬 Arrival",   c.ret_arr_time),
+      ].join("") : "");
+
+      return `
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;margin-bottom:20px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+        <!-- Header -->
+        <div style="background:#4f4300;padding:16px 20px;">
+          <div style="font-size:20px;font-weight:800;color:#fff;">✈ ${c.origin} → ${c.destination}</div>
+          <div style="font-size:13px;color:#c8b870;margin-top:4px;">
+            ${fmtDate(c.depart_date)}${c.return_date ? " → " + fmtDate(c.return_date) : ""} &nbsp;·&nbsp; ${c.airline} &nbsp;·&nbsp; € ${c.price}
+          </div>
+        </div>
+        <!-- Travel guide -->
+        <div style="padding:16px 20px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="width:50%;vertical-align:top;padding-right:16px;border-right:1px solid #eee;">
+                <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4f4300;padding-bottom:8px;margin-bottom:8px;border-bottom:2px solid #e0e0e0;">
+                  ✈ Leave · ${fmtDate(c.depart_date)}
+                </div>
+                <table style="width:100%;border-collapse:collapse;">${outboundRows}</table>
+              </td>
+              <td style="width:50%;vertical-align:top;padding-left:16px;">
+                ${returnRows ? `
+                <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4f4300;padding-bottom:8px;margin-bottom:8px;border-bottom:2px solid #e0e0e0;">
+                  ✈ Return · ${fmtDate(c.return_date)}
+                </div>
+                <table style="width:100%;border-collapse:collapse;">${returnRows}</table>` : ""}
+              </td>
+            </tr>
+          </table>
+          <div style="margin-top:14px;text-align:right;">
+            <a href="${c.booking_url||'#'}" style="background:#d63082;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Book</a>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+
+    return `<!DOCTYPE html><html><body style="background:#f0f2f5;padding:24px;margin:0;">
+      <div style="max-width:640px;margin:0 auto;">
+        <div style="background:#4f4300;border-radius:8px 8px 0 0;padding:12px 20px;margin-bottom:4px;">
+          <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:0.15em;">UDRA △ STUDIO ◇</span>
+          <span style="color:#c8b870;font-size:13px;margin-left:12px;">travel planner</span>
+        </div>
+        ${cards}
+        <div style="text-align:center;color:#aaa;font-size:12px;margin-top:8px;">Sent via UDRA travel planner</div>
+      </div>
+    </body></html>`;
+  }
+
+  function showToast(msg) {
+    let t = document.getElementById("toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "toast";
+      t.style.cssText = "position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:0.75rem 1.4rem;border-radius:50px;font-size:0.9rem;font-weight:600;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,0.3);pointer-events:none;transition:opacity 0.4s;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    clearTimeout(t._hide);
+    t._hide = setTimeout(() => t.style.opacity = "0", 3500);
+  }
+
+  function downloadPng(canvas) {
+    const a  = document.createElement("a");
+    a.href   = canvas.toDataURL("image/png");
+    a.download = "flight-options.png";
+    a.click();
+  }
+
+  // ── Airport picker ────────────────────────────────────────────
+  const AP_AIRPORTS = [
+    { iata:"AMS", city:"Amsterdam",          name:"Schiphol",                        country:"Netherlands", flag:"🇳🇱", lat:52.3086, lon:4.7639  },
+    { iata:"EIN", city:"Eindhoven",          name:"Eindhoven Airport",               country:"Netherlands", flag:"🇳🇱", lat:51.4501, lon:5.3745  },
+    { iata:"RTM", city:"Rotterdam",          name:"Rotterdam The Hague Airport",     country:"Netherlands", flag:"🇳🇱", lat:51.9569, lon:4.4372  },
+    { iata:"BRU", city:"Brussels",          name:"Brussels Zaventem",               country:"Belgium",     flag:"🇧🇪", lat:50.9014, lon:4.4844  },
+    { iata:"CRL", city:"Brussels",          name:"Brussels South Charleroi",        country:"Belgium",     flag:"🇧🇪", lat:50.4592, lon:4.4538  },
+    { iata:"LGG", city:"Liège",             name:"Liège Airport",                   country:"Belgium",     flag:"🇧🇪", lat:50.6374, lon:5.4432  },
+    { iata:"NRN", city:"Düsseldorf/Weeze",  name:"Weeze Airport",                   country:"Germany",     flag:"🇩🇪", lat:51.6024, lon:6.1422  },
+    { iata:"DUS", city:"Düsseldorf",        name:"Düsseldorf Airport",              country:"Germany",     flag:"🇩🇪", lat:51.2895, lon:6.7668  },
+    { iata:"CGN", city:"Cologne",           name:"Cologne Bonn Airport",            country:"Germany",     flag:"🇩🇪", lat:50.8659, lon:7.1427  },
+    { iata:"DTM", city:"Dortmund",          name:"Dortmund Airport",                country:"Germany",     flag:"🇩🇪", lat:51.5183, lon:7.6124  },
+    { iata:"MUC", city:"Munich",            name:"Munich Airport",                  country:"Germany",     flag:"🇩🇪", lat:48.3538, lon:11.7861 },
+    { iata:"FRA", city:"Frankfurt",         name:"Frankfurt Airport",               country:"Germany",     flag:"🇩🇪", lat:50.0379, lon:8.5622  },
+    { iata:"OPO", city:"Porto",             name:"Francisco Sá Carneiro",           country:"Portugal",    flag:"🇵🇹", lat:41.2367, lon:-8.6710 },
+    { iata:"LIS", city:"Lisbon",            name:"Humberto Delgado Airport",        country:"Portugal",    flag:"🇵🇹", lat:38.7813, lon:-9.1359 },
+    { iata:"FAO", city:"Faro",              name:"Faro Airport",                    country:"Portugal",    flag:"🇵🇹", lat:37.0145, lon:-7.9659 },
+    { iata:"SCQ", city:"Santiago de Compostela", name:"Santiago de Compostela Airport", country:"Spain",  flag:"🇪🇸", lat:42.8964, lon:-8.4151 },
+    { iata:"VGO", city:"Vigo",              name:"Vigo–Peinador Airport",           country:"Spain",       flag:"🇪🇸", lat:42.2318, lon:-8.6268 },
+    { iata:"OVD", city:"Asturias",          name:"Asturias Airport",                country:"Spain",       flag:"🇪🇸", lat:43.5636, lon:-6.0346 },
+    { iata:"SDR", city:"Santander",         name:"Seve Ballesteros Airport",        country:"Spain",       flag:"🇪🇸", lat:43.4271, lon:-3.8200 },
+    { iata:"BIO", city:"Bilbao",            name:"Bilbao Airport",                  country:"Spain",       flag:"🇪🇸", lat:43.3011, lon:-2.9106 },
+    { iata:"MAD", city:"Madrid",            name:"Barajas Airport",                 country:"Spain",       flag:"🇪🇸", lat:40.4719, lon:-3.5626 },
+    { iata:"BCN", city:"Barcelona",         name:"El Prat Airport",                 country:"Spain",       flag:"🇪🇸", lat:41.2971, lon:2.0785  },
+    { iata:"AGP", city:"Málaga",            name:"Costa del Sol Airport",           country:"Spain",       flag:"🇪🇸", lat:36.6749, lon:-4.4991 },
+    { iata:"LPA", city:"Gran Canaria",      name:"Gran Canaria Airport",            country:"Spain",       flag:"🇪🇸", lat:27.9319, lon:-15.3866},
+    { iata:"TFS", city:"Tenerife",          name:"Tenerife South Airport",          country:"Spain",       flag:"🇪🇸", lat:28.0445, lon:-16.5725},
+    { iata:"PMI", city:"Palma de Mallorca", name:"Palma Airport",                   country:"Spain",       flag:"🇪🇸", lat:39.5517, lon:2.7388  },
+    { iata:"IBZ", city:"Ibiza",             name:"Ibiza Airport",                   country:"Spain",       flag:"🇪🇸", lat:38.8729, lon:1.3731  },
+    { iata:"ALC", city:"Alicante",          name:"Alicante Airport",                country:"Spain",       flag:"🇪🇸", lat:38.2822, lon:-0.5582 },
+    { iata:"VLC", city:"Valencia",          name:"Valencia Airport",                country:"Spain",       flag:"🇪🇸", lat:39.4893, lon:-0.4816 },
+    { iata:"SVQ", city:"Seville",           name:"Seville Airport",                 country:"Spain",       flag:"🇪🇸", lat:37.4180, lon:-5.8931 },
+    { iata:"ACE", city:"Lanzarote",         name:"Lanzarote Airport",               country:"Spain",       flag:"🇪🇸", lat:28.9455, lon:-13.6052},
+    { iata:"FUE", city:"Fuerteventura",     name:"Fuerteventura Airport",           country:"Spain",       flag:"🇪🇸", lat:28.4527, lon:-13.8638},
+    { iata:"LHR", city:"London",            name:"Heathrow Airport",                country:"UK",          flag:"🇬🇧", lat:51.4775, lon:-0.4614 },
+    { iata:"LGW", city:"London",            name:"Gatwick Airport",                 country:"UK",          flag:"🇬🇧", lat:51.1481, lon:-0.1903 },
+    { iata:"STN", city:"London",            name:"Stansted Airport",                country:"UK",          flag:"🇬🇧", lat:51.8850, lon:0.2350  },
+    { iata:"CDG", city:"Paris",             name:"Charles de Gaulle Airport",       country:"France",      flag:"🇫🇷", lat:49.0097, lon:2.5479  },
+    { iata:"ORY", city:"Paris",             name:"Orly Airport",                    country:"France",      flag:"🇫🇷", lat:48.7233, lon:2.3794  },
+    { iata:"NCE", city:"Nice",              name:"Côte d'Azur Airport",             country:"France",      flag:"🇫🇷", lat:43.6584, lon:7.2159  },
+    { iata:"MRS", city:"Marseille",         name:"Marseille Provence Airport",      country:"France",      flag:"🇫🇷", lat:43.4393, lon:5.2214  },
+    { iata:"FCO", city:"Rome",              name:"Fiumicino Airport",               country:"Italy",       flag:"🇮🇹", lat:41.8003, lon:12.2389 },
+    { iata:"MXP", city:"Milan",             name:"Malpensa Airport",                country:"Italy",       flag:"🇮🇹", lat:45.6306, lon:8.7281  },
+    { iata:"ATH", city:"Athens",            name:"Eleftherios Venizelos Airport",   country:"Greece",      flag:"🇬🇷", lat:37.9364, lon:23.9445 },
+    { iata:"HER", city:"Heraklion",         name:"Heraklion Airport",               country:"Greece",      flag:"🇬🇷", lat:35.3397, lon:25.1803 },
+    { iata:"RHO", city:"Rhodes",            name:"Rhodes Airport",                  country:"Greece",      flag:"🇬🇷", lat:36.4054, lon:28.0862 },
+    { iata:"CFU", city:"Corfu",             name:"Ioannis Kapodistrias Airport",    country:"Greece",      flag:"🇬🇷", lat:39.6019, lon:19.9117 },
+    { iata:"MLA", city:"Malta",             name:"Malta International Airport",     country:"Malta",       flag:"🇲🇹", lat:35.8574, lon:14.4775 },
+    { iata:"VIE", city:"Vienna",            name:"Vienna International Airport",    country:"Austria",     flag:"🇦🇹", lat:48.1103, lon:16.5697 },
+    { iata:"ZRH", city:"Zurich",            name:"Zurich Airport",                  country:"Switzerland", flag:"🇨🇭", lat:47.4647, lon:8.5492  },
+    { iata:"GVA", city:"Geneva",            name:"Geneva Airport",                  country:"Switzerland", flag:"🇨🇭", lat:46.2381, lon:6.1089  },
+    { iata:"CPH", city:"Copenhagen",        name:"Kastrup Airport",                 country:"Denmark",     flag:"🇩🇰", lat:55.6180, lon:12.6561 },
+    { iata:"ARN", city:"Stockholm",         name:"Arlanda Airport",                 country:"Sweden",      flag:"🇸🇪", lat:59.6519, lon:17.9186 },
+    { iata:"HEL", city:"Helsinki",          name:"Helsinki-Vantaa Airport",         country:"Finland",     flag:"🇫🇮", lat:60.3172, lon:24.9633 },
+    { iata:"DUB", city:"Dublin",            name:"Dublin Airport",                  country:"Ireland",     flag:"🇮🇪", lat:53.4213, lon:-6.2700 },
+    { iata:"PRG", city:"Prague",            name:"Václav Havel Airport",            country:"Czechia",     flag:"🇨🇿", lat:50.1008, lon:14.2600 },
+    { iata:"WAW", city:"Warsaw",            name:"Chopin Airport",                  country:"Poland",      flag:"🇵🇱", lat:52.1657, lon:20.9671 },
+    { iata:"BUD", city:"Budapest",          name:"Budapest Liszt Ferenc Airport",   country:"Hungary",     flag:"🇭🇺", lat:47.4298, lon:19.2611 },
+    { iata:"SOF", city:"Sofia",             name:"Sofia Airport",                   country:"Bulgaria",    flag:"🇧🇬", lat:42.6967, lon:23.4114 },
+    { iata:"OTP", city:"Bucharest",         name:"Henri Coandă Airport",            country:"Romania",     flag:"🇷🇴", lat:44.5711, lon:26.0850 },
+    { iata:"IST", city:"Istanbul",          name:"Istanbul Airport",                country:"Turkey",      flag:"🇹🇷", lat:41.2753, lon:28.7519 },
+    { iata:"AYT", city:"Antalya",           name:"Antalya Airport",                 country:"Turkey",      flag:"🇹🇷", lat:36.8987, lon:30.7992 },
+  ];
+
+  // Deduplicate by iata
+  const AP_LIST = Object.values(Object.fromEntries(AP_AIRPORTS.map(a => [a.iata, a])));
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371, toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function nearbyAirports(iata, radiusKm = 200) {
+    const base = AP_LIST.find(a => a.iata === iata);
+    if (!base || base.lat == null) return [];
+    return AP_LIST
+      .filter(a => a.iata !== iata && a.lat != null)
+      .map(a => ({ ...a, distKm: Math.round(haversineKm(base.lat, base.lon, a.lat, a.lon)) }))
+      .filter(a => a.distKm <= radiusKm)
+      .sort((a, b) => a.distKm - b.distKm)
+      .slice(0, 5);
+  }
+
+  const apState = {
+    from: { selected: ["BRU","EIN","AMS","NRN"], activeIdx: -1 },
+    to:   { selected: ["OPO","SCQ"],             activeIdx: -1 },
+  };
+
+  function toggleNearbyChip(chip) {
+    chip.classList.toggle("picked");
+  }
+
+  function addNearbyAndSearch(btn) {
+    // Collect all picked chips in nearby cards
+    document.querySelectorAll(".nearby-chip.picked").forEach(chip => {
+      const side = chip.dataset.side;   // "from" or "to"
+      const iata = chip.dataset.iata;
+      if (!apState[side].selected.includes(iata)) {
+        apState[side].selected.push(iata);
+      }
+    });
+    apRenderChips("from");
+    apRenderChips("to");
+    apUpdateHidden("from");
+    apUpdateHidden("to");
+    doSearch();
+  }
+
+  function apInit() {
+    ["from","to"].forEach(side => {
+      apRenderChips(side);
+      apUpdateHidden(side);
+      apRenderList(side, "");
+    });
+    document.addEventListener("click", e => {
+      if (!e.target.closest("#ap-from-wrap")) apClose("from");
+      if (!e.target.closest("#ap-to-wrap"))   apClose("to");
+    });
+  }
+
+  function apRenderChips(side) {
+    const box = document.getElementById(`ap-${side}-box`);
+    box.querySelectorAll(".ap-chip").forEach(c => c.remove());
+    const ph = document.getElementById(`ap-${side}-ph`);
+    if (apState[side].selected.length === 0) {
+      ph.style.display = "";
+    } else {
+      ph.style.display = "none";
+      apState[side].selected.forEach(iata => {
+        const ap   = AP_LIST.find(a => a.iata === iata);
+        const chip = document.createElement("span");
+        chip.className = "ap-chip";
+        chip.innerHTML = `${ap ? ap.flag : ""} ${iata} <button class="ap-chip-remove" onclick="apRemove('${side}','${iata}',event)">×</button>`;
+        box.appendChild(chip);
+      });
+    }
+  }
+
+  function apUpdateHidden(side) {
+    document.getElementById(side === "from" ? "origins" : "destinations")
+      .value = apState[side].selected.join(",");
+  }
+
+  function apFocus(side) {
+    document.getElementById(`ap-${side}-box`).classList.add("focused");
+    document.getElementById(`ap-${side}-drop`).classList.add("open");
+    const inp = document.getElementById(`ap-${side}-search`);
+    inp.value = "";
+    apRenderList(side, "");
+    setTimeout(() => inp.focus(), 0);
+  }
+
+  function apClose(side) {
+    document.getElementById(`ap-${side}-box`).classList.remove("focused");
+    document.getElementById(`ap-${side}-drop`).classList.remove("open");
+    document.getElementById(`ap-${side}-search`).value = "";
+    apState[side].activeIdx = -1;
+  }
+
+  function apFilter(side) {
+    const q = document.getElementById(`ap-${side}-search`).value;
+    apRenderList(side, q);
+  }
+
+  function apRenderList(side, query) {
+    const list = document.getElementById(`ap-${side}-list`);
+    const q    = query.trim().toLowerCase();
+    const matches = q
+      ? AP_LIST.filter(a =>
+          a.iata.toLowerCase().includes(q) ||
+          a.city.toLowerCase().includes(q) ||
+          a.name.toLowerCase().includes(q) ||
+          a.country.toLowerCase().includes(q))
+      : AP_LIST;
+
+    if (!matches.length) {
+      list.innerHTML = `<div class="ap-no-results">No airports found for "${query}"</div>`;
+      return;
+    }
+    list.innerHTML = matches.slice(0, 50).map((a) => {
+      const sel = apState[side].selected.includes(a.iata);
+      return `<div class="ap-option${sel ? " selected" : ""}" data-iata="${a.iata}" onclick="apSelect('${side}','${a.iata}')">
+        <span class="ap-flag">${a.flag}</span>
+        <span class="ap-iata">${a.iata}</span>
+        <span class="ap-info">
+          <div class="ap-city">${a.city}</div>
+          <div class="ap-name">${a.name} · ${a.country}</div>
+        </span>
+        <span class="ap-check">${sel ? "✓" : ""}</span>
+      </div>`;
+    }).join("");
+    apState[side].activeIdx = -1;
+  }
+
+  function apSelect(side, iata) {
+    const sel = apState[side].selected;
+    const idx = sel.indexOf(iata);
+    if (idx === -1) sel.push(iata); else sel.splice(idx, 1);
+    apRenderChips(side);
+    apUpdateHidden(side);
+    const q = document.getElementById(`ap-${side}-search`).value;
+    apRenderList(side, q);
+    document.getElementById(`ap-${side}-search`).focus();
+  }
+
+  function apRemove(side, iata, event) {
+    event.stopPropagation();
+    const sel = apState[side].selected;
+    const idx = sel.indexOf(iata);
+    if (idx !== -1) sel.splice(idx, 1);
+    apRenderChips(side);
+    apUpdateHidden(side);
+  }
+
+  function apKey(event, side) {
+    const list    = document.getElementById(`ap-${side}-list`);
+    const options = list.querySelectorAll(".ap-option");
+    if (!options.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      apState[side].activeIdx = Math.min(apState[side].activeIdx + 1, options.length - 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      apState[side].activeIdx = Math.max(apState[side].activeIdx - 1, 0);
+    } else if (event.key === "Enter" && apState[side].activeIdx >= 0) {
+      event.preventDefault();
+      apSelect(side, options[apState[side].activeIdx].dataset.iata);
+      return;
+    } else if (event.key === "Escape") {
+      apClose(side); return;
+    } else { return; }
+    options.forEach((o, i) => o.classList.toggle("active", i === apState[side].activeIdx));
+    options[apState[side].activeIdx]?.scrollIntoView({ block: "nearest" });
+  }
+
+  // ── My Trips / Booking confirmation ──────────────────────────
+
+  function getTrips() {
+    try { return JSON.parse(localStorage.getItem("udra_trips") || "[]"); }
+    catch(e) { return []; }
+  }
+
+  function saveTrips(trips) {
+    localStorage.setItem("udra_trips", JSON.stringify(trips));
+  }
+
+  function isFlightBooked(key) {
+    return getTrips().some(t => t.key === key);
+  }
+
+  function confirmFlight(event, cardEl) {
+    // <a> still opens the booking URL in new tab; we just also save locally
+    const data = JSON.parse(decodeURIComponent(cardEl.dataset.card));
+    const key  = `${data.origin}-${data.destination}-${data.depart_date}`;
+    if (isFlightBooked(key)) return;
+    const trips = getTrips();
+    trips.push({ ...data, key, confirmedAt: Date.now() });
+    saveTrips(trips);
+    updateTripsCount();
+    // Flip just this card in-place: badge → BOOKED, Book link → Unconfirm button
+    const center = cardEl.querySelector(".topbar-center");
+    if (center) center.innerHTML = `<span class="badge badge-booked">✓ Booked</span>`;
+    const bookLink = cardEl.querySelector(".bekijk-deal-btn");
+    if (bookLink) {
+      const ub = document.createElement("button");
+      ub.className   = "unconfirm-btn";
+      ub.textContent = "✗ Unconfirm";
+      ub.onclick     = () => unconfirmFlight(key);
+      bookLink.replaceWith(ub);
+    }
+  }
+
+  function unconfirmFlight(key) {
+    const trips = getTrips().filter(t => t.key !== key);
+    saveTrips(trips);
+    updateTripsCount();
+    // Remove the card from My Trips
+    renderMyTrips();
+    // Flip matching card in search results back to Book if still visible
+    document.querySelectorAll(".flight-card").forEach(cardEl => {
+      try {
+        const d = JSON.parse(decodeURIComponent(cardEl.dataset.card || "{}"));
+        const k = `${d.origin}-${d.destination}-${d.depart_date}`;
+        if (k !== key) return;
+        const center = cardEl.querySelector(".topbar-center");
+        if (center) center.innerHTML = ""; // clear BOOKED badge
+        const ub = cardEl.querySelector(".unconfirm-btn");
+        if (ub) {
+          const link = document.createElement("a");
+          link.className = "bekijk-deal-btn";
+          link.href      = d.booking_url;
+          link.target    = "_blank";
+          link.textContent = "Book";
+          link.onclick   = (ev) => confirmFlight(ev, cardEl);
+          ub.replaceWith(link);
+        }
+      } catch(e) {}
+    });
+  }
+
+  function updateTripsCount() {
+    const n   = getTrips().length;
+    const badge = document.getElementById("trips-count");
+    badge.textContent = n;
+    badge.style.display = n > 0 ? "" : "none";
+  }
+
+  function showTab(tab) {
+    document.getElementById("results").style.display  = tab === "search" ? "block" : "none";
+    document.getElementById("mytrips").style.display  = tab === "trips"  ? "block" : "none";
+    document.getElementById("tab-search").classList.toggle("active", tab === "search");
+    document.getElementById("tab-trips").classList.toggle("active",  tab === "trips");
+    if (tab === "trips") renderMyTrips();
+  }
+
+  function fmtTripDate(iso) {
+    if (!iso) return "";
+    const [y,m,d] = iso.split("-");
+    const M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${+d} ${M[+m-1]}`;
+  }
+
+  function fmtConfirmedAt(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
+  }
+
+  function buildMyTripCard(trip) {
+    const parkosUrl = buildParkosUrl(trip.origin, trip.depart_date, trip.dep_time, trip.return_date, trip.ret_arr_time);
+    const rentalUrl = rentalUrlForFlight(trip, trip.depart_date, trip.return_date);
+    const flights   = buildCard(trip, trip.depart_date, trip.return_date);
+    return `
+      <div class="flight-card mytrip-card">
+        <div class="card-topbar">
+          <div class="topbar-left">
+            <button class="icon-btn">♡</button>
+          </div>
+          <div class="topbar-center">
+            <span class="badge badge-booked">✓ Booked</span>
+          </div>
+          <div class="topbar-right">
+            <div class="luggage-btn"><span>🧳</span> 0</div>
+            <div class="luggage-btn"><span>🎒</span> 0</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-flights">${flights}</div>
+          <div class="card-price">
+            <div class="price-amount">€ ${trip.price ?? "—"}</div>
+            <div class="price-tier">Basic</div>
+            <a class="bekijk-deal-btn" href="${trip.booking_url}" target="_blank">Book</a>
+            <a class="rental-card-btn" href="${rentalUrl}" target="_blank">🚗 Rent a car</a>
+            ${parkosUrl ? `<a class="parkos-card-btn" href="${parkosUrl}" target="_blank">🅿 Parking</a>` : ""}
+            <button class="unconfirm-btn" onclick="unconfirmFlight('${trip.key}')">✗ Unconfirm</button>
+          </div>
+        </div>
+        <div class="mytrip-tg" id="mytrip-tg-${trip.key.replace(/[^a-zA-Z0-9]/g,'_')}">
+          <div class="mytrip-tg-loading">⏳ Loading travel guide…</div>
+        </div>
+        <div class="card-footer">${trip.airline} · confirmed ${fmtConfirmedAt(trip.confirmedAt)}</div>
+      </div>`;
+  }
+
+  async function renderMyTrips() {
+    const wrap = document.getElementById("mytrips");
+    const trips = getTrips();
+    if (!trips.length) {
+      wrap.innerHTML = `<div class="error-card" style="text-align:center;padding:2rem;">No booked trips yet.<br><small style="color:#aaa">Click <strong>Book</strong> on any flight to confirm it here.</small></div>`;
+      return;
+    }
+    wrap.innerHTML = trips.map(buildMyTripCard).join("");
+    // Async-load travel guide for each card
+    trips.forEach(trip => {
+      const tgId = `mytrip-tg-${trip.key.replace(/[^a-zA-Z0-9]/g,'_')}`;
+      loadMyTripTG(trip, tgId);
+    });
+  }
+
+  async function loadMyTripTG(trip, tgId) {
+    const el = document.getElementById(tgId);
+    if (!el) return;
+    try {
+      const params = new URLSearchParams({
+        dep_airport: trip.dep_airport || trip.origin,
+        dep_time:    trip.dep_time,
+        dep_date:    trip.depart_date,
+        arr_airport: trip.arr_airport || trip.destination,
+        ret_dep_time: trip.ret_dep_time || "",
+        ret_dep_date: trip.return_date  || "",
+      });
+      const res  = await fetch(`/travel_guide?${params}`);
+      const data = await res.json();
+      const fmtDate = s => { if (!s) return ""; const [y,m,d] = s.split("-"); const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${+d} ${M[+m-1]}`; };
+      const row  = (label, value) => value
+        ? `<div class="tg-row"><span class="tg-label">${label}</span><span class="tg-value">${value}</span></div>`
+        : "";
+      let leftCol = "", rightCol = "";
+      if (data.outbound) {
+        const o = data.outbound;
+        leftCol = `
+          <div class="tg-col-title">✈ Leave &nbsp;·&nbsp; ${fmtDate(o.date)}</div>
+          ${row("🏠 Leave home",               o.leave)}
+          ${row("🚗 Arrive " + o.dep_airport_name, o.arrive_airport)}
+          ${row("🛫 Departure",                o.departure)}
+          ${trip.arr_time ? row("🛬 Arrive " + o.arr_airport_name, trip.arr_time) : ""}`;
+      }
+      if (data.return) {
+        const r = data.return;
+        rightCol = `
+          <div class="tg-col-title">✈ Return &nbsp;·&nbsp; ${fmtDate(r.date)}</div>
+          ${row("🏠 Leave",                    r.leave)}
+          ${row("🚗 Arrive " + r.dep_airport_name, r.arrive_airport)}
+          ${row("🛫 Departure",                r.departure)}
+          ${trip.ret_arr_time ? row("🛬 Arrive " + r.arr_airport_name, trip.ret_arr_time) : ""}`;
+      }
+      const calData = JSON.stringify({
+        dep: trip.depart_date, ret: trip.return_date,
+        origin: trip.origin, dest: trip.destination,
+        deptime: trip.dep_time, arrtime: trip.arr_time,
+        retdep: trip.ret_dep_time, retarr: trip.ret_arr_time,
+        price: "", airline: "",
+      });
+      el.innerHTML = `
+        <div class="tg-cols">
+          <div>${leftCol || "<span style='color:#aaa'>No outbound data</span>"}</div>
+          <div>${rightCol}</div>
+        </div>
+        <div class="tg-footer">
+          <button class="tg-cal-btn" onclick="openCalendarFromPanel(this)" data-tg='${encodeURIComponent(calData)}'>📅 Add to calendar</button>
+        </div>`;
+    } catch(e) {
+      el.innerHTML = `<div class="mytrip-tg-loading">Travel guide unavailable</div>`;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => { apInit(); updateTripsCount(); });
+</script>
+
+</body>
+</html>

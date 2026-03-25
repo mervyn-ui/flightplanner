@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flight options</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+    }
+    .page-header {
+      max-width: 680px;
+      margin: 0 auto 1.5rem;
+      text-align: center;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1a1a2e;
+    }
+    .page-header p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+    }
+    .cards-wrap { max-width: 680px; margin: 0 auto; }
+
+    /* ── Flight card ── */
+    .flight-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 1.2rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+    }
+
+    /* Top bar */
+    .card-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid #ebebeb;
+      background: #fafafa;
+    }
+    .topbar-left { font-size: 0.82rem; color: #888; }
+    .topbar-right { display: flex; gap: 0.4rem; align-items: center; }
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+    }
+    .badge-cheapest { background: #d4f5dc; color: #1a8c3a; }
+
+    /* Card body */
+    .card-body { display: flex; align-items: stretch; }
+    .card-flights { flex: 1; }
+
+    .flight-row {
+      display: flex;
+      align-items: center;
+      padding: 0.9rem 1rem;
+      gap: 0.75rem;
+      border-bottom: 1px solid #f2f2f2;
+    }
+    .flight-row:last-child { border-bottom: none; }
+
+    .row-logo {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: #f5f0ff;
+      border: 1.5px solid #ddd0f5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.58rem;
+      font-weight: 900;
+      color: #4a1080;
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+    }
+    .row-info { flex: 1; min-width: 0; }
+    .row-times {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #111;
+      white-space: nowrap;
+      letter-spacing: -0.3px;
+    }
+    .row-date-label {
+      font-size: 0.7rem;
+      color: #aaa;
+      font-weight: 400;
+      margin-left: 0.3rem;
+    }
+    .row-cities {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 0.12rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-direct {
+      width: 72px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #111;
+      flex-shrink: 0;
+    }
+    .row-duration {
+      width: 68px;
+      font-size: 0.85rem;
+      color: #333;
+      flex-shrink: 0;
+    }
+
+    /* Price column */
+    .card-price {
+      width: 145px;
+      flex-shrink: 0;
+      border-left: 1px solid #ebebeb;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 1rem 1.1rem;
+      gap: 0.35rem;
+    }
+    .price-amount {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #111;
+      line-height: 1;
+      white-space: nowrap;
+      letter-spacing: -1px;
+    }
+    .price-tier {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .bekijk-deal-btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.55rem 0.5rem;
+      background: #d63082;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .bekijk-deal-btn:hover { opacity: 0.88; }
+
+    /* Airline footer */
+    .card-footer {
+      padding: 0.4rem 1rem 0.5rem;
+      font-size: 0.78rem;
+      color: #888;
+      border-top: 1px solid #f2f2f2;
+    }
+
+    /* Page footer */
+    .page-footer {
+      max-width: 680px;
+      margin: 1.5rem auto 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+    .page-footer a {
+      color: #4a1080;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .page-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 500px) {
+      .row-times { font-size: 1rem; }
+      .row-direct, .row-duration { width: 52px; font-size: 0.75rem; }
+      .card-price { width: 100px; }
+      .price-amount { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>✈ Flight options</h1>
+  <p>{{ cards|length }} flight{{ 's' if cards|length != 1 else '' }} shared with you</p>
+</div>
+
+<div class="cards-wrap">
+  {% for card in cards %}
+  {% set M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+  {% macro fmt_date(s) %}{% if s %}{{ s.split('-')[2]|int }} {{ M[s.split('-')[1]|int - 1] }}{% endif %}{% endmacro %}
+  {% macro initials(name) %}{{ name.split()|map('first')|join('')[:3]|upper }}{% endmacro %}
+
+  <div class="flight-card">
+    <!-- Top bar -->
+    <div class="card-topbar">
+      <div class="topbar-left">
+        {{ card.origin }} → {{ card.destination }}
+        &nbsp;·&nbsp;
+        {{ fmt_date(card.depart_date) }}{% if card.return_date %} → {{ fmt_date(card.return_date) }}{% endif %}
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-cheapest">€ {{ card.price }}</span>
+      </div>
+    </div>
+
+    <!-- Body: flights + price -->
+    <div class="card-body">
+      <div class="card-flights">
+
+        <!-- Outbound row -->
+        <div class="flight-row">
+          <div class="row-logo">{{ initials(card.airline) }}</div>
+          <div class="row-info">
+            <div class="row-times">
+              {% if card.dep_time and card.arr_time %}{{ card.dep_time }} – {{ card.arr_time }}{% elif card.dep_time %}{{ card.dep_time }}{% else %}—{% endif %}
+              <span class="row-date-label">{{ fmt_date(card.depart_date) }}</span>
+            </div>
+            <div class="row-cities">{{ card.origin }} – {{ card.destination }}</div>
+          </div>
+          <div class="row-direct">direct</div>
+          <div class="row-duration"></div>
+        </div>
+
+        <!-- Return row (if applicable) -->
+        {% if card.ret_dep_time %}
+        <div class="flight-row">
+          <div class="row-logo">{{ initials(card.airline) }}</div>
+          <div class="row-info">
+            <div class="row-times">
+              {{ card.ret_dep_time }}{% if card.ret_arr_time %} – {{ card.ret_arr_time }}{% endif %}
+              <span class="row-date-label">{{ fmt_date(card.return_date) }}</span>
+            </div>
+            <div class="row-cities">{{ card.destination }} – {{ card.origin }}</div>
+          </div>
+          <div class="row-direct">direct</div>
+          <div class="row-duration"></div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- Price column -->
+      <div class="card-price">
+        <div class="price-amount">€ {{ card.price }}</div>
+        <div class="price-tier">Basic</div>
+        <a class="bekijk-deal-btn" href="{{ card.booking_url }}" target="_blank">Bekijk deal</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer">{{ card.airline }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="page-footer">
+  Shared via <a href="/">Flight Search</a>
+</div>
+
+</body>
+</html>

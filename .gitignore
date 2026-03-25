@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+dist/
+build/
+*.spec
+.DS_Store
+desktop.py
+flight_search.py.bak
