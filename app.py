@@ -273,18 +273,22 @@ def travel_guide():
         """Geocode using separate postcode and city values — avoids split issues with spaced postcodes (e.g. 'SW18 1AA')."""
         base = "https://nominatim.openstreetmap.org/search"
         hdrs = {"User-Agent": "FlightSearchApp/1.0"}
-        # Try postcode + city first, then postcode alone, then free-text city
         candidates = []
+        # Structured queries first (most precise)
         if pc and city:
             candidates.append({"postalcode": pc, "city": city})
         if pc:
             candidates.append({"postalcode": pc})
+        # Free-text fallbacks — comma-separated works well for Nominatim
+        if pc and city:
+            candidates.append({"q": f"{pc}, {city}"})
+            candidates.append({"q": f"{pc} {city}"})
         if city:
             candidates.append({"q": city})
         for params in candidates:
             try:
                 r = req.get(base, params={**params, "format": "json", "limit": 1},
-                            headers=hdrs, timeout=6)
+                            headers=hdrs, timeout=8)
                 d = r.json()
                 if d:
                     return float(d[0]["lat"]), float(d[0]["lon"])
@@ -318,12 +322,19 @@ def travel_guide():
     def schedule(date_str, time_str, dep_airport, arr_airport, from_lat, from_lon, traveler_tz):
         """
         Returns drive time (always) and full schedule (when dep_time is known).
+        Falls back to basic flight info if drive time can't be calculated.
         """
+        base_only = {
+            "date":             date_str,
+            "dep_airport_name": AIRPORT_NAMES.get(dep_airport, dep_airport),
+            "arr_airport_name": AIRPORT_NAMES.get(arr_airport, arr_airport),
+            "departure":        time_str,
+        }
         if dep_airport not in AIRPORT_COORDS:
-            return None
+            return base_only
         drive_mins = get_drive_mins(from_lat, from_lon, *AIRPORT_COORDS[dep_airport])
         if drive_mins is None:
-            return None
+            return base_only
 
         base = {
             "date":             date_str,
@@ -362,8 +373,16 @@ def travel_guide():
     if home_pc or home_city:
         home_lat, home_lon = geocode_structured(home_pc, home_city)
         if home_lat is None:
-            home_lat, home_lon = 52.0705, 4.3007   # fallback: Den Haag centre
-        out = schedule(dep_date, dep_time, dep_airport, arr_airport, home_lat, home_lon, "Europe/Amsterdam")
+            # Geocoding failed — still show basic flight info
+            out = {
+                "date":             dep_date,
+                "dep_airport_name": AIRPORT_NAMES.get(dep_airport, dep_airport),
+                "arr_airport_name": AIRPORT_NAMES.get(arr_airport, arr_airport),
+                "departure":        dep_time,
+                "geocode_error":    True,
+            }
+        else:
+            out = schedule(dep_date, dep_time, dep_airport, arr_airport, home_lat, home_lon, "Europe/Amsterdam")
     elif home_address:
         home_lat, home_lon = geocode(home_address)
         if home_lat is None:

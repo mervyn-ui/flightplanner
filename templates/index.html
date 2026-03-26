@@ -2634,10 +2634,12 @@ async function openCalendarFromPanel(btn) {
       if (data.outbound) {
         const o = data.outbound;
         let driveRow = "";
-        if (o.drive_mins) {
+        if (o.geocode_error) {
+          driveRow = `<div class="tg-row" style="color:#c00">⚠️ Address not found — check postcode &amp; city</div>`;
+        } else if (o.drive_mins) {
           const driveH = Math.floor(o.drive_mins / 60);
           const driveM = o.drive_mins % 60;
-          const driveLabel = driveH > 0 ? `${driveH}u ${driveM}min` : `${driveM} min`;
+          const driveLabel = driveH > 0 ? `${driveH}h ${driveM}min` : `${driveM} min`;
           driveRow = `
             ${o.leave          ? row("🏠 Leave home",                    o.leave)          : ""}
             ${row("🚗 Drive to " + o.dep_airport_name,                   driveLabel)}
