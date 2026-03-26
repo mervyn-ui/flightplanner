@@ -1033,93 +1033,109 @@
       return `https://www.transavia.com/en-EU/bookingtool/flights/deeplink?${p}`;
     }
     if (a.includes("easyjet")) {
-      const p = new URLSearchParams({ adults: 1, childrenCount: 0, departDate: dmy(dep), origins: o, destinations: d });
-      if (isRT) p.set("returnDate", dmy(ret));
-      return `https://www.easyjet.com/en/flights/search?${p}`;
+      // EasyJet uses Skyscanner — their own site has no injectable deeplink
+      return skyFallback;
+    }
+
+    if (a.includes("vueling")) {
+      const p = new URLSearchParams({ o, d, dd: dep, dt: isRT ? "2" : "1", adt: 1, chd: 0, inf: 0 });
+      if (isRT) p.set("rd", ret);
+      return `https://tickets.vueling.com/booking?${p}`;
     }
 
     if (a.includes("iberia express") || (a.includes("iberia") && !a.includes("air"))) {
-      const p = new URLSearchParams({ from: o, to: d, departure: dep, adult: 1, children: 0 });
-      if (isRT) p.set("return", ret);
-      return `https://www.iberia.com/gb/flights/?${p}`;
+      // Iberia deeplink with split date params
+      const [dy, dm, dd2] = dep.split("-");
+      let url = `https://www.iberia.com/flights/?market=ES&language=en&TRIP_TYPE=${isRT?"2":"1"}&BEGIN_CITY_01=${o}&END_CITY_01=${d}&BEGIN_DAY_01=${dd2}&BEGIN_MONTH_01=${dy}${dm}&BEGIN_YEAR_01=${dy}&FARE_TYPE=R&ADT=1&CHD=0&INF=0`;
+      if (isRT) {
+        const [ry,rm,rd2] = ret.split("-");
+        url += `&END_DAY_01=${rd2}&END_MONTH_01=${ry}${rm}&END_YEAR_01=${ry}`;
+      }
+      return url + `#!/availability`;
     }
+
     if (a.includes("air europa")) {
-      const p = new URLSearchParams({ origin: o, destination: d, departureDate: dep, adults: 1, tripType: isRT ? "ROUND_TRIP" : "ONE_WAY" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.aireuropa.com/en/flights/book-flight?${p}`;
+      return skyFallback; // SPA — no injectable deeplink
     }
+
     if (a.includes("tap") || a.includes("air portugal")) {
-      const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, children: 0, infants: 0, cabin: "ECONOMY", tripType: isRT ? "ROUND_TRIP" : "ONE_WAY" });
-      if (isRT) p.set("inboundDate", ret);
-      return `https://www.flytap.com/en/flights?${p}`;
+      const ddot = s => { const [y,m,dy2] = s.split("-"); return `${dy2}.${m}.${y}`; };
+      const p = new URLSearchParams({ market: "NL", origin: o, destination: d, depDate: ddot(dep), flightType: isRT ? "return" : "single", adt: 1, chd: 0, inf: 0, language: "EN" });
+      if (isRT) p.set("retDate", ddot(ret));
+      return `https://booking.flytap.com/booking/flights/deeplink?${p}`;
     }
+
     if (a.includes("klm")) {
-      const depFlat = dep.replace(/-/g, "");
-      const trip    = isRT && ret
-        ? `${o}:${depFlat}:${d}-${d}:${ret.replace(/-/g,"")}:${o}`
-        : `${o}:${depFlat}:${d}`;
-      const p = new URLSearchParams({
-        newSearchWeb: "true", application: "EBT7",
-        country: "nl", language: "en",
-        numberOfAdults: 1, numberOfChildren: 0, numberOfInfants: 0,
-        cabinClass: "M", trip,
-      });
-      return `https://www.klm.com/travel/nl_en/apps/ebt/calendar.htm?${p}`;
+      return skyFallback; // KLM booking engine is session-only SPA
     }
+
     if (a.includes("brussels")) {
-      const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, children: 0 });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.brusselsairlines.com/en-be/flights?${p}`;
+      return skyFallback; // SPA — no injectable deeplink
     }
+
     if (a.includes("air france")) {
-      const p = new URLSearchParams({ "pax": "1:0:0:0:0:0:0:0", cabin: "ECONOMY", tripType: isRT ? "ROUND_TRIP" : "ONE_WAY", outboundDate: dep, originLocationCode: o, destinationLocationCode: d });
-      if (isRT) p.set("inboundDate", ret);
-      return `https://www.airfrance.com/search/offers?${p}`;
+      const legs = isRT
+        ? `${o}:A>${d}:A-${d}:A>${o}:A`
+        : `${o}:A>${d}:A`;
+      return `https://wwws.airfrance.fr/search/offers?connections=${encodeURIComponent(legs)}&pax=1:0:0:0:0:0:0&market=en_US_us&cabinClass=ECONOMY&bookingFlow=LEISURE&activeConnection=0`;
     }
+
     if (a.includes("lufthansa")) {
-      const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, tripType: isRT ? "R" : "O" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.lufthansa.com/gb/en/flight-search?${p}`;
+      return skyFallback; // Requires encrypted partner API
     }
+
     if (a.includes("british airways") || a.startsWith("ba ") || a === "ba") {
-      const p = new URLSearchParams({ departure: o, arrival: d, outboundDate: dep, numAdults: 1, cabinCode: "M", tripType: isRT ? "RT" : "OW" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.britishairways.com/travel/book/public/en_gb?${p}`;
+      const onds = isRT
+        ? `${o}-${d}_${dep}-${d}-${o}_${ret}`
+        : `${o}-${d}_${dep}`;
+      return `https://www.britishairways.com/travel/book/execclub/_gf/en_gb/flightList?onds=${encodeURIComponent(onds)}`;
     }
+
     if (a.includes("aer lingus")) {
-      const p = new URLSearchParams({ originCode: o, destinationCode: d, outboundDate: dep, numAdult: 1, numChild: 0, tripType: isRT ? "Return" : "OneWay" });
-      if (isRT) p.set("inboundDate", ret);
-      return `https://www.aerlingus.com/flights/search/?${p}`;
+      const p = new URLSearchParams({
+        departureDate_0: dep, destinationAirportCode_0: d, sourceAirportCode_0: o,
+        fareCategory: "ECONOMY", fareType: isRT ? "RETURN" : "ONE_WAY",
+        groupBooking: "false", numAdults: 1, numChildren: 0, numInfants: 0, numYoungAdults: 0,
+      });
+      if (isRT) {
+        p.set("departureDate_1", ret);
+        p.set("destinationAirportCode_1", o);
+        p.set("sourceAirportCode_1", d);
+      }
+      return `https://www.aerlingus.com/app/make/flight-search-result?${p}`;
     }
+
     if (a.includes("wizz")) {
       return `https://wizzair.com/en-gb/booking/select-flight/${o}/${d}/${dep}/${isRT ? ret : "null"}/1/0/0/`;
     }
+
     if (a.includes("volotea")) {
-      const p = new URLSearchParams({ origin: o, destination: d, departureDate: dep, adults: 1, children: 0, infants: 0, isRoundTrip: isRT ? "true" : "false" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.volotea.com/en/flights/?${p}`;
+      return skyFallback; // SPA — no injectable deeplink
     }
+
     if (a.includes("norwegian")) {
       const [dy, dm, dd] = dep.split("-");
-      const p = new URLSearchParams({ D_city: o, A_city: d, D_day: dd, D_month: dm, D_year: dy, tripType: isRT ? "RT" : "OW", adults: 1, children: 0, infants: 0 });
-      if (isRT) { const [ry,rm,rd] = ret.split("-"); p.set("R_day",rd); p.set("R_month",rm); p.set("R_year",ry); }
-      return `https://www.norwegian.com/en/booking/flight-search/?${p}`;
+      const p = new URLSearchParams({
+        AdultCount: 1, A_City: d, D_City: o,
+        D_Month: `${dy}${dm}`, D_Day: +dd,
+        TripType: isRT ? "2" : "1", IncludeTransit: "true",
+      });
+      if (isRT) { const [ry,rm,rd] = ret.split("-"); p.set("R_Month",`${ry}${rm}`); p.set("R_Day",+rd); }
+      return `https://www.norwegian.com/en/low-fare-calendar/?${p}`;
     }
+
     if (a.includes("jet2")) {
-      const p = new URLSearchParams({ from: o, to: d, departDate: dep, adults: 1 });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.jet2.com/flights/search?${p}`;
+      return skyFallback; // UK-only, no public deeplink
     }
+
     if (a.includes("swiss")) {
-      const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, tripType: isRT ? "R" : "O" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.swiss.com/gb/en/book/flight?${p}`;
+      return skyFallback; // Requires encrypted Lufthansa Group partner API
     }
+
     if (a.includes("austrian")) {
-      const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, tripType: isRT ? "R" : "O" });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.austrian.com/gb/en/book/flight?${p}`;
+      return skyFallback; // Requires encrypted Lufthansa Group partner API
     }
+
     if (a.includes("finnair")) {
       const p = new URLSearchParams({ origin: o, destination: d, outboundDate: dep, adults: 1, tripType: isRT ? "return" : "oneway" });
       if (isRT) p.set("returnDate", ret);
