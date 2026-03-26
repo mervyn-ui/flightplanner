@@ -269,33 +269,39 @@ def travel_guide():
         "LIS": "Europe/Lisbon",
     }
 
+    def geocode_structured(pc, city):
+        """Geocode using separate postcode and city values — avoids split issues with spaced postcodes (e.g. 'SW18 1AA')."""
+        base = "https://nominatim.openstreetmap.org/search"
+        hdrs = {"User-Agent": "FlightSearchApp/1.0"}
+        # Try postcode + city first, then postcode alone, then free-text city
+        candidates = []
+        if pc and city:
+            candidates.append({"postalcode": pc, "city": city})
+        if pc:
+            candidates.append({"postalcode": pc})
+        if city:
+            candidates.append({"q": city})
+        for params in candidates:
+            try:
+                r = req.get(base, params={**params, "format": "json", "limit": 1},
+                            headers=hdrs, timeout=6)
+                d = r.json()
+                if d:
+                    return float(d[0]["lat"]), float(d[0]["lon"])
+            except Exception:
+                pass
+        return None, None
+
     def geocode(q):
-        """Structured postcode+city query when input looks like a postcode, else free-text."""
-        import re as _re
-        base  = "https://nominatim.openstreetmap.org/search"
-        hdrs  = {"User-Agent": "FlightSearchApp/1.0"}
-        parts = q.strip().split(None, 1)
-        pc    = parts[0] if parts else ""
-        city  = parts[1] if len(parts) > 1 else ""
-        # Only use structured query when first token looks like a postal code
-        # (max 10 chars, alphanumeric + optional hyphen, no comma)
-        is_pc = bool(pc and len(pc) <= 10 and _re.match(r'^[A-Z0-9\-]+$', pc, _re.I))
-        if is_pc:
-            candidates = ([{"postalcode": pc, "city": city}] if city else []) + [{"postalcode": pc}]
-            for params in candidates:
-                try:
-                    r = req.get(base, params={**params, "format": "json", "limit": 1},
-                                headers=hdrs, timeout=6)
-                    d = r.json()
-                    if d: return float(d[0]["lat"]), float(d[0]["lon"])
-                except Exception:
-                    pass
-        # Free-text fallback (also primary for full-address strings)
+        """Free-text geocode fallback for legacy home_address param."""
+        base = "https://nominatim.openstreetmap.org/search"
+        hdrs = {"User-Agent": "FlightSearchApp/1.0"}
         try:
             r = req.get(base, params={"q": q, "format": "json", "limit": 1},
                         headers=hdrs, timeout=8)
             d = r.json()
-            if d: return float(d[0]["lat"]), float(d[0]["lon"])
+            if d:
+                return float(d[0]["lat"]), float(d[0]["lon"])
         except Exception:
             pass
         return None, None
@@ -350,11 +356,18 @@ def travel_guide():
         }
 
     # Outbound: full schedule when home address provided, basic flight info otherwise
-    home_address = request.args.get("home_address", "").strip()
-    if home_address:
-        home_lat, home_lon = geocode(home_address)
+    home_pc      = request.args.get("home_pc",      "").strip()
+    home_city    = request.args.get("home_city",    "").strip()
+    home_address = request.args.get("home_address", "").strip()  # legacy fallback
+    if home_pc or home_city:
+        home_lat, home_lon = geocode_structured(home_pc, home_city)
         if home_lat is None:
             home_lat, home_lon = 52.0705, 4.3007   # fallback: Den Haag centre
+        out = schedule(dep_date, dep_time, dep_airport, arr_airport, home_lat, home_lon, "Europe/Amsterdam")
+    elif home_address:
+        home_lat, home_lon = geocode(home_address)
+        if home_lat is None:
+            home_lat, home_lon = 52.0705, 4.3007
         out = schedule(dep_date, dep_time, dep_airport, arr_airport, home_lat, home_lon, "Europe/Amsterdam")
     elif dep_date or dep_time:
         out = {

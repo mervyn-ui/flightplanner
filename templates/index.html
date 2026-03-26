@@ -1648,9 +1648,12 @@
     if (panel.style.display === "block") { panel.style.display = "none"; return; }
     btn.textContent = "⏳ Loading…";
     btn.disabled = true;
-    const homeAddress = _fromTab === "nl" ? `${NL_HOME_PC} ${NL_HOME_CITY}` : "";
+    const usePC   = _fromTab === "nl" ? NL_HOME_PC   : "";
+    const useCity = _fromTab === "nl" ? NL_HOME_CITY : "";
     try {
-      const params = new URLSearchParams({ dep_airport:depAirport, dep_time:depTime, dep_date:depDate, arr_airport:arrAirport, ret_dep_time:retDepTime, ret_dep_date:retDepDate, home_address:homeAddress });
+      const params = new URLSearchParams({ dep_airport:depAirport, dep_time:depTime, dep_date:depDate, arr_airport:arrAirport, ret_dep_time:retDepTime, ret_dep_date:retDepDate });
+      if (usePC)   params.set("home_pc",   usePC);
+      if (useCity) params.set("home_city", useCity);
       const res  = await fetch(`/travel_guide?${params}`);
       const data = await res.json();
       const noData = !data.outbound && !data.return;
@@ -2619,7 +2622,8 @@ async function openCalendarFromPanel(btn) {
         ret_dep_time: trip.ret_dep_time || "",
         ret_dep_date: trip.return_date  || "",
       });
-      if (homeAddress) p.set("home_address", homeAddress);
+      if (usePC)   p.set("home_pc",   usePC);
+      if (useCity) p.set("home_city", useCity);
       const res  = await fetch(`/travel_guide?${p}`);
       const data = await res.json();
       const fmtDate = s => { if (!s) return ""; const [y,m,d] = s.split("-"); const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${+d} ${M[+m-1]}`; };
