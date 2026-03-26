@@ -251,6 +251,7 @@
       padding: 0.28rem 0.85rem;
       border-radius: 99px;
       letter-spacing: 0.01em;
+      white-space: nowrap;
     }
     .badge-best     { background: #d5f5f0; color: #0a8a7e; }
     .badge-cheapest { background: #d4f5dc; color: #1a8c3a; }
@@ -789,9 +790,14 @@
 
     @media (max-width: 680px) {
       /* Search card */
-      .search-card { padding: 1rem; }
+      .search-card { padding: 0.85rem; }
+      .search-wrap  { padding: 0 0.75rem; }
       .fields, .dates-row { grid-template-columns: 1fr; }
-      .field input { font-size: 0.95rem; }
+      .field input, .dates-row input {
+        font-size: 0.95rem;
+        width: 100%; max-width: 100%;
+        min-width: 0;
+      }
 
       /* Flight rows */
       .row-times { font-size: 1rem; }
@@ -1519,10 +1525,7 @@
               <button class="share-select-btn" onclick="toggleCard(this.closest('.flight-card'))">Share</button>
             </div>
             <div class="topbar-center">${badges}</div>
-            <div class="topbar-right">
-              <div class="luggage-btn"><span>🧳</span> 0</div>
-              <div class="luggage-btn"><span>🎒</span> 0</div>
-            </div>
+            <div class="topbar-right"></div>
           </div>
           <div class="card-body">
             <div class="card-flights">${buildCard(r, depart_date, return_date)}</div>
@@ -2438,8 +2441,6 @@ async function openCalendarFromPanel(btn) {
             </div>
             <div class="topbar-center"></div>
             <div class="topbar-right">
-              <div class="luggage-btn"><span>🧳</span> 0</div>
-              <div class="luggage-btn"><span>🎒</span> 0</div>
             </div>
           </div>
           <div class="card-body">
