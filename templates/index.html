@@ -1387,7 +1387,6 @@
     const dateLabel = date ? `<span class="row-date-label">${formatDateSmall(date)}</span>` : "";
     return `
       <div class="flight-row">
-        <div class="row-check"><input type="checkbox" onclick="toggleCard(this.closest('.flight-card'))" /></div>
         <div class="row-logo">${airlineLogo(airline)}</div>
         <div class="row-info">
           <div class="row-times">${times}${dateLabel}</div>
