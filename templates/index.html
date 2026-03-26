@@ -1020,7 +1020,7 @@
     const toSky = s => s.replace(/-/g, "").slice(2);                                       // 2026-04-14 → 260414
 
     // Skyscanner fallback (prefilled, better than booking.com)
-    const fallback = (() => {
+    const skyFallback = (() => {
       const base = `https://www.skyscanner.com/transport/flights/${o}/${d}/${toSky(dep)}`;
       return (isRT ? `${base}/${toSky(ret)}/` : `${base}/`) + `?adults=1&cabinclass=economy`;
     })();
@@ -1551,10 +1551,7 @@
               <div class="price-amount">€ ${r.price ?? "—"}</div>
               ${(() => {
                 const fee = cabinBagFee(r.airline);
-                if (fee === 0)   return `<div class="price-tier">Basic (cabin bag incl.)</div>`;
-                if (fee !== null && r.price != null)
-                                 return `<div class="price-tier">Basic (+1 bag)</div>`;
-                return           `<div class="price-tier">Basic</div>`;
+                return `<div class="price-tier">Basic</div>`;
               })()}
               ${(() => {
                 const tripKey = `${r.origin}-${r.destination}-${depart_date}`;
