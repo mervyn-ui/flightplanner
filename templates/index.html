@@ -541,6 +541,44 @@
       cursor: pointer; transition: background 0.15s;
     }
     .tg-cal-btn:hover { background: #6b5800; }
+    /* Address section in travel guide */
+    .tg-addr-wrap {
+      margin-top: 0.65rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #ddd8b0;
+      font-size: 0.78rem;
+    }
+    .tg-addr-display {
+      display: flex; align-items: center; gap: 0.4rem;
+      color: #666;
+    }
+    .tg-addr-edit-btn {
+      background: none; border: none; cursor: pointer;
+      color: #7a6800; font-size: 0.72rem; font-weight: 700;
+      padding: 0.1rem 0.3rem; border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .tg-addr-edit-btn:hover { background: #f0ead0; }
+    .tg-addr-form {
+      display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+      margin-top: 0.3rem;
+    }
+    .tg-addr-input {
+      border: 1.5px solid #d0d7e2; border-radius: 6px;
+      padding: 0.3rem 0.55rem; font-size: 0.78rem;
+      background: #fff; outline: none;
+      transition: border-color 0.15s;
+    }
+    .tg-addr-input:focus { border-color: #4f4300; }
+    .tg-addr-input.pc   { width: 90px; }
+    .tg-addr-input.city { width: 120px; }
+    .tg-addr-btn {
+      background: #4f4300; color: #fff; border: none;
+      border-radius: 6px; padding: 0.3rem 0.7rem;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .tg-addr-btn:hover { background: #6b5800; }
     .tg-maps { display: block; margin-top: 0.5rem; text-align: center; color: #4f4300; font-weight: 600; text-decoration: none; }
     .tg-maps:hover { text-decoration: underline; }
 
@@ -2544,12 +2582,35 @@ async function openCalendarFromPanel(btn) {
     });
   }
 
-  async function loadMyTripTG(trip, tgId) {
+  function showTGAddrEdit(safeKey) {
+    document.getElementById(`tg-addr-display-${safeKey}`)?.style.setProperty("display","none");
+    const form = document.getElementById(`tg-addr-form-${safeKey}`);
+    if (form) { form.style.display = "flex"; form.querySelector("input")?.focus(); }
+  }
+
+  function reloadMyTripTG(safeKey, tripKey) {
+    const pc   = (document.getElementById(`tg-pc-${safeKey}`)?.value || "").trim();
+    const city = (document.getElementById(`tg-city-${safeKey}`)?.value || "").trim();
+    if (!pc && !city) { document.getElementById(`tg-pc-${safeKey}`)?.focus(); return; }
+    const trip = getTrips().find(t => t.key === tripKey);
+    if (!trip) return;
+    const tgId = `mytrip-tg-${safeKey}`;
+    document.getElementById(tgId).innerHTML = '<div class="mytrip-tg-loading">⏳ Calculating…</div>';
+    loadMyTripTG(trip, tgId, pc, city);
+  }
+
+  async function loadMyTripTG(trip, tgId, postalCode = "", city = "") {
     const el = document.getElementById(tgId);
     if (!el) return;
 
+    const isNL      = _fromTab === "nl";
+    const usePC     = postalCode || (isNL ? NL_HOME_PC   : "");
+    const useCity   = city       || (isNL ? NL_HOME_CITY : "");
+    const homeAddress = [usePC, useCity].filter(Boolean).join(" ");
+    const safeKey   = trip.key.replace(/[^a-zA-Z0-9]/g, "_");
+    const isDefault = isNL && !postalCode && !city; // using hardcoded defaults
+
     try {
-      const homeAddress = _fromTab === "nl" ? `${NL_HOME_PC} ${NL_HOME_CITY}` : "";
       const p = new URLSearchParams({
         dep_airport:  trip.dep_airport || trip.origin,
         dep_time:     trip.dep_time    || "",
@@ -2565,8 +2626,6 @@ async function openCalendarFromPanel(btn) {
       const row  = (label, value) => value
         ? `<div class="tg-row"><span class="tg-label">${label}</span><span class="tg-value">${value}</span></div>`
         : "";
-      const safeKey = trip.key.replace(/[^a-zA-Z0-9]/g,'_');
-
       let leftCol = "", rightCol = "";
       if (data.outbound) {
         const o = data.outbound;
@@ -2605,9 +2664,30 @@ async function openCalendarFromPanel(btn) {
         retdep: trip.ret_dep_time, retarr: trip.ret_arr_time,
         price: "", airline: "",
       });
+      // Address section
+      const addrSection = isNL
+        ? `<div class="tg-addr-wrap">
+            <div class="tg-addr-display" id="tg-addr-display-${safeKey}">
+              📍 ${usePC} ${useCity}
+              <button class="tg-addr-edit-btn" onclick="showTGAddrEdit('${safeKey}')">✏️ change</button>
+            </div>
+            <div class="tg-addr-form" id="tg-addr-form-${safeKey}" style="display:none">
+              <input class="tg-addr-input pc"   id="tg-pc-${safeKey}"   type="text" value="${usePC}"   placeholder="Postcode" />
+              <input class="tg-addr-input city" id="tg-city-${safeKey}" type="text" value="${useCity}" placeholder="City" />
+              <button class="tg-addr-btn" onclick="reloadMyTripTG('${safeKey}','${trip.key}')">Update</button>
+            </div>
+           </div>`
+        : `<div class="tg-addr-wrap">
+            <div class="tg-addr-form" id="tg-addr-form-${safeKey}" style="display:flex">
+              <input class="tg-addr-input pc"   id="tg-pc-${safeKey}"   type="text" value="${usePC}"   placeholder="Postcode" />
+              <input class="tg-addr-input city" id="tg-city-${safeKey}" type="text" value="${useCity}" placeholder="City" />
+              <button class="tg-addr-btn" onclick="reloadMyTripTG('${safeKey}','${trip.key}')">Calculate</button>
+            </div>
+           </div>`;
+
       el.innerHTML = `
         <div class="tg-cols">
-          <div>${leftCol}</div>
+          <div>${leftCol}${addrSection}</div>
           <div>${rightCol}</div>
         </div>
         <div class="tg-footer">
