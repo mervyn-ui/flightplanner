@@ -35,6 +35,7 @@
       border-radius: 16px;
       padding: 1.8rem;
       box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+      overflow: hidden;
     }
 
     .trip-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.4rem; }
@@ -219,7 +220,16 @@
     }
     .topbar-left   { display: flex; gap: 0.4rem; }
     .topbar-center { display: flex; gap: 0.4rem; }
-    .topbar-right  { display: flex; gap: 0.45rem; align-items: center; }
+    .topbar-right  { display: flex; gap: 0.3rem; align-items: center; }
+    .bag-tag {
+      display: flex; align-items: center; gap: 0.2rem;
+      border: 1.5px solid #e0e0e0; border-radius: 7px;
+      padding: 0.2rem 0.45rem; font-size: 0.72rem; font-weight: 600;
+      background: #fff; color: #555; white-space: nowrap;
+    }
+    .bag-tag.included { border-color: #a8e6bc; color: #1a7a3a; background: #f0fdf4; }
+    .bag-tag.paid     { border-color: #ffd0b8; color: #b84800; background: #fff8f5; }
+    .bag-tag.unknown  { border-color: #e0e0e0; color: #aaa; }
 
     .icon-btn {
       width: 34px; height: 34px;
@@ -389,7 +399,7 @@
       display: block;
       width: 100%;
       margin-top: 0.4rem;
-      padding: 0.55rem 0.5rem;
+      padding: 0.7rem 0.5rem;
       background: #f75b28;
       color: #fff;
       font-size: 0.82rem;
@@ -1525,7 +1535,15 @@
               <button class="share-select-btn" onclick="toggleCard(this.closest('.flight-card'))">Share</button>
             </div>
             <div class="topbar-center">${badges}</div>
-            <div class="topbar-right"></div>
+            <div class="topbar-right">${(() => {
+              const fee = cabinBagFee(r.airline);
+              const cabinTag = fee === 0
+                ? `<div class="bag-tag included" title="Cabin bag included">🧳 ✓</div>`
+                : fee !== null
+                  ? `<div class="bag-tag paid" title="Cabin bag costs extra">🧳 +€${fee}</div>`
+                  : `<div class="bag-tag unknown" title="Cabin bag allowance unknown">🧳 ?</div>`;
+              return `<div class="bag-tag included" title="Personal item always free">🎒 ✓</div>${cabinTag}`;
+            })()}</div>
           </div>
           <div class="card-body">
             <div class="card-flights">${buildCard(r, depart_date, return_date)}</div>
@@ -1535,7 +1553,7 @@
                 const fee = cabinBagFee(r.airline);
                 if (fee === 0)   return `<div class="price-tier">Basic (cabin bag incl.)</div>`;
                 if (fee !== null && r.price != null)
-                                 return `<div class="price-tier">Basic (+1 tas)</div>`;
+                                 return `<div class="price-tier">Basic (+1 bag)</div>`;
                 return           `<div class="price-tier">Basic</div>`;
               })()}
               ${(() => {
