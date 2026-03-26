@@ -1009,9 +1009,18 @@
       return `https://www.ryanair.com/gb/en/trip/flights/select?${p}`;
     }
     if (a.includes("transavia")) {
-      const p = new URLSearchParams({ departureStation: o, arrivalStation: d, outboundDate: dep, adults: 1 });
-      if (isRT) p.set("returnDate", ret);
-      return `https://www.transavia.com/book/en-eu/search-a-flight?${p}`;
+      const toDMY = s => { const [y,m,dy] = s.split("-"); return `${dy}${m}${y}`; };
+      const p = new URLSearchParams({
+        "routeSelection.origin":        o,
+        "routeSelection.destination":   d,
+        "routeSelection.departureDate": toDMY(dep),
+        "routeSelection.isReturn":      isRT ? "true" : "false",
+        "paxSelection.adults":          1,
+        "paxSelection.children":        0,
+        "paxSelection.infants":         0,
+      });
+      if (isRT) p.set("routeSelection.returnDate", toDMY(ret));
+      return `https://www.transavia.com/en-EU/book-a-trip/flights/search/?${p}`;
     }
     if (a.includes("easyjet")) {
       const p = new URLSearchParams({ adults: 1, childrenCount: 0, departDate: dmy(dep), origins: o, destinations: d });
