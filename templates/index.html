@@ -681,6 +681,67 @@
       font-weight: 700; cursor: pointer; text-decoration: none;
       text-align: center; font-size: 0.9rem;
     }
+    /* ── Timeline visualization ── */
+    .tl-wrap { margin-top: 0.75rem; }
+    .tl-scroll {
+      overflow-x: auto; border: 1px solid #e8e8e8; border-radius: 14px;
+      padding: 0.75rem 1rem 1rem; background: #fafafa;
+    }
+    .tl-inner { position: relative; }
+    .tl-month {
+      position: absolute; top: 0; font-size: 0.7rem; font-weight: 700;
+      color: #333; padding: 3px 0; user-select: none;
+    }
+    .tl-wk-line {
+      position: absolute; top: 22px; width: 1px; background: #e0e0e0;
+    }
+    .tl-block {
+      position: absolute; border-radius: 5px; cursor: pointer;
+      overflow: hidden; transition: filter 0.12s, transform 0.1s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+    .tl-block:hover { filter: brightness(1.18); transform: scaleY(1.08); z-index: 20; }
+    .tl-block-lbl {
+      font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.92);
+      line-height: 1; padding: 4px 4px 0; display: block;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tl-block-sub {
+      font-size: 0.55rem; color: rgba(255,255,255,0.75);
+      padding: 1px 4px; display: block;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tl-legend {
+      display: flex; align-items: center; gap: 0.4rem;
+      margin-top: 0.55rem; font-size: 0.72rem; color: #666; flex-wrap: wrap;
+    }
+    .tl-legend-bar {
+      width: 80px; height: 10px; border-radius: 5px;
+      background: linear-gradient(to right, hsl(120,65%,42%), hsl(60,65%,42%), hsl(0,65%,42%));
+    }
+    .tl-detail {
+      margin-top: 0.9rem; background: #fff; border: 1.5px solid #4f4300;
+      border-radius: 14px; padding: 1.1rem 1.4rem;
+      display: none; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+    }
+    .tl-detail.open { display: flex; }
+    .tl-detail-route { font-size: 1.1rem; font-weight: 800; color: #1a1a2e; }
+    .tl-detail-dates { font-size: 0.82rem; color: #555; }
+    .tl-detail-price { font-size: 1.6rem; font-weight: 900; color: #4f4300; }
+    .tl-detail-airline { font-size: 0.78rem; color: #888; }
+    .tl-detail-book {
+      margin-left: auto; background: #4f4300; color: #fff;
+      border-radius: 22px; padding: 0.55rem 1.4rem;
+      font-weight: 700; font-size: 0.85rem; text-decoration: none;
+      white-space: nowrap;
+    }
+    .tl-detail-book:hover { background: #3a3000; }
+    #tl-tooltip {
+      position: fixed; background: rgba(15,15,15,0.88); color: #fff;
+      padding: 0.5rem 0.8rem; border-radius: 9px; font-size: 0.76rem;
+      pointer-events: none; display: none; z-index: 9999;
+      max-width: 220px; line-height: 1.45; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
     .rental-section { margin-top: 2rem; }
     .rental-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .rental-card {
@@ -963,7 +1024,7 @@
 
     <button class="search-btn" id="search-btn" onclick="doSearch()">Search flights</button>
     <div style="text-align:center;margin-top:0.55rem;">
-      <button class="scan-link-btn" id="scanBtn" onclick="scanDeals()">🔍 find cheapest in next 3 months</button>
+      <button class="scan-link-btn" id="scanBtn" onclick="scanDeals()">📅 Stay blocks — next 90 days</button>
     </div>
   </div>
 </div>
@@ -1748,45 +1809,164 @@ async function openCalendarFromPanel(btn) {
     btn.textContent = "📅 Calendar";
   }
 
+  let _tlTrips = [];
+
+  function _tlPriceColor(price, minP, maxP) {
+    const ratio = maxP > minP ? (price - minP) / (maxP - minP) : 0;
+    const hue = Math.round(120 - ratio * 120);
+    return `hsl(${hue},65%,42%)`;
+  }
+
+  function _tlFmtDate(s) {
+    if (!s) return "";
+    const [y,m,d] = s.split("-");
+    const M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${+d} ${M[+m-1]}`;
+  }
+
+  function tlHover(e, idx) {
+    const t = _tlTrips[idx];
+    if (!t) return;
+    const tip = document.getElementById("tl-tooltip");
+    tip.innerHTML = `<b>${t.origin} → ${t.destination}</b><br>${_tlFmtDate(t.dep_date)} – ${_tlFmtDate(t.ret_date)} &nbsp;·&nbsp; ${t.duration}d<br>€${t.price} &nbsp;·&nbsp; ${t.airline}`;
+    tip.style.display = "block";
+    tip.style.left = (e.clientX + 14) + "px";
+    tip.style.top  = (e.clientY - 10) + "px";
+  }
+  function tlHoverMove(e) {
+    const tip = document.getElementById("tl-tooltip");
+    tip.style.left = (e.clientX + 14) + "px";
+    tip.style.top  = (e.clientY - 10) + "px";
+  }
+  function tlHoverOut() {
+    document.getElementById("tl-tooltip").style.display = "none";
+  }
+
+  function tlClick(idx) {
+    const t = _tlTrips[idx];
+    if (!t) return;
+    const panel = document.getElementById("tl-detail-panel");
+    const bookUrl = t.booking_token
+      ? `/booking_link?token=${encodeURIComponent(t.booking_token)}&fallback=https://www.skyscanner.com`
+      : `https://www.skyscanner.com/transport/flights/${t.origin}/${t.destination}/${t.dep_date.replace(/-/g,"").slice(2)}/${t.ret_date.replace(/-/g,"").slice(2)}/?adults=1`;
+    panel.innerHTML = `
+      <div class="tl-detail open">
+        <div>
+          <div class="tl-detail-route">${t.origin} → ${t.destination}</div>
+          <div class="tl-detail-dates">✈ ${_tlFmtDate(t.dep_date)} ${t.dep_date.slice(0,4)} → ${_tlFmtDate(t.ret_date)} &nbsp;·&nbsp; ${t.duration} nights</div>
+          <div class="tl-detail-airline">${t.airline}${t.dep_time ? " · " + t.dep_time : ""}</div>
+        </div>
+        <div class="tl-detail-price">€${t.price}</div>
+        <a class="tl-detail-book" href="${bookUrl}" target="_blank" rel="noopener">Book →</a>
+      </div>`;
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function _renderTimeline(trips, startStr, endStr) {
+    const DAY   = 10;   // px per day
+    const BH    = 26;   // block height px
+    const BGAP  = 3;    // gap between rows
+    const HDR   = 48;   // header height px
+
+    const t0 = new Date(startStr + "T00:00:00");
+    const t1 = new Date(endStr   + "T00:00:00");
+    const totalDays = Math.round((t1 - t0) / 86400000);
+    const W = totalDays * DAY;
+
+    const prices = trips.map(t => t.price);
+    const minP = Math.min(...prices), maxP = Math.max(...prices);
+
+    // Sort by dep_date asc, then price asc
+    const sorted = [...trips].sort((a,b) =>
+      a.dep_date < b.dep_date ? -1 : a.dep_date > b.dep_date ? 1 : a.price - b.price
+    );
+
+    // Greedy row assignment (no overlap)
+    const rowFree = [];  // rowFree[row] = first free x pixel
+    const placed = sorted.map(trip => {
+      const depDay = Math.round((new Date(trip.dep_date + "T00:00:00") - t0) / 86400000);
+      const x = depDay * DAY;
+      const w = Math.max(trip.duration * DAY - 2, 8);
+      let row = 0;
+      while (rowFree[row] !== undefined && rowFree[row] > x) row++;
+      rowFree[row] = x + w + 2;
+      return { ...trip, x, w, row };
+    });
+
+    const maxRow = Math.max(...placed.map(t => t.row), 0);
+    const H = HDR + (maxRow + 1) * (BH + BGAP) + 8;
+
+    // Month labels
+    const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    let headerHTML = "", ticksHTML = "";
+    let prevM = -1;
+    for (let day = 0; day < totalDays; day++) {
+      const dt = new Date(t0.getTime() + day * 86400000);
+      if (dt.getMonth() !== prevM) {
+        headerHTML += `<div class="tl-month" style="left:${day*DAY}px">${MON[dt.getMonth()]} ${dt.getFullYear()}</div>`;
+        prevM = dt.getMonth();
+      }
+      if (day % 7 === 0) {
+        ticksHTML += `<div class="tl-wk-line" style="left:${day*DAY}px;height:${H}px"></div>`;
+      }
+    }
+
+    // Blocks
+    let blocksHTML = "";
+    placed.forEach((trip, idx) => {
+      const y = HDR + trip.row * (BH + BGAP);
+      const bg = _tlPriceColor(trip.price, minP, maxP);
+      blocksHTML += `<div class="tl-block"
+        style="left:${trip.x}px;top:${y}px;width:${trip.w}px;height:${BH}px;background:${bg}"
+        onmouseenter="tlHover(event,${idx})"
+        onmousemove="tlHoverMove(event)"
+        onmouseleave="tlHoverOut()"
+        onclick="tlClick(${idx})">
+        <span class="tl-block-lbl">€${trip.price}</span>
+        <span class="tl-block-sub">${trip.origin}→${trip.destination}</span>
+      </div>`;
+    });
+
+    _tlTrips = placed;  // store for handlers
+
+    return `
+      <div class="tl-wrap">
+        <div class="tl-scroll">
+          <div class="tl-inner" style="width:${W}px;height:${H}px">
+            ${ticksHTML}${headerHTML}${blocksHTML}
+          </div>
+        </div>
+        <div class="tl-legend">
+          <div class="tl-legend-bar"></div>
+          <span>cheap → expensive</span>
+          <span style="margin-left:1rem;opacity:0.55">block width = stay duration (3 / 5 / 7 days) &nbsp;·&nbsp; click block for details</span>
+        </div>
+        <div id="tl-detail-panel"></div>
+      </div>`;
+  }
+
   async function scanDeals() {
     const btn = document.getElementById("scanBtn");
     btn.disabled = true;
     btn.textContent = "⏳ scanning…";
-    document.getElementById("deals-results").innerHTML = "";
+    document.getElementById("deals-results").innerHTML =
+      `<div style="text-align:center;padding:1.5rem;color:#888;font-size:0.85rem">Fetching ~90 days of flight prices — this takes 30–60 s…</div>`;
     try {
       const origins = document.getElementById("origins").value || "AMS,EIN,BRU,NRN";
-      const dests   = document.getElementById("destinations").value || "OPO,SCQ";
-      const res  = await fetch(`/scan_best_deals?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(dests)}`);
+      const dests   = document.getElementById("destinations").value || "OPO,SCQ,VGO";
+      const res  = await fetch(`/scan_timeline?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(dests)}`);
       const data = await res.json();
-      const deals = data.deals || [];
-      if (!deals.length) {
-        document.getElementById("deals-results").innerHTML = `<div class="error-card">No deals found.</div>`;
+      const trips = data.trips || [];
+      if (!trips.length) {
+        document.getElementById("deals-results").innerHTML = `<div class="error-card">No trips found. Try different airports or dates.</div>`;
       } else {
-        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-        const fmtDate = s => { const [y,m,d] = s.split("-"); return `${d} ${months[+m-1]} ${y}`; };
-        const stayDays = (dep, ret) => Math.round((new Date(ret)-new Date(dep))/(1000*60*60*24));
-        let html = `<div class="deals-grid">`;
-        deals.forEach(d => {
-          const bookUrl = d.booking_token
-            ? `/booking_link?token=${encodeURIComponent(d.booking_token)}&fallback=${encodeURIComponent(`https://www.booking.com/flights/search.html?type=ROUNDTRIP&from=${d.origin}&to=${d.destination}&fromDate=${d.depart_date}&toDate=${d.return_date}&adults=1`)}`
-            : `https://www.booking.com/flights/search.html?type=ROUNDTRIP&from=${d.origin}&to=${d.destination}&fromDate=${d.depart_date}&toDate=${d.return_date}&adults=1`;
-          html += `
-            <div class="deal-card">
-              <div class="deal-route">${d.origin} → ${d.destination}</div>
-              <div class="deal-dates">✈ ${fmtDate(d.depart_date)} → ${fmtDate(d.return_date)} &nbsp;·&nbsp; ${stayDays(d.depart_date, d.return_date)} nights</div>
-              <div class="deal-price">€ ${d.price}</div>
-              <div class="deal-airline">${d.airline}${d.dep_time ? " · " + d.dep_time : ""}</div>
-              <a class="deal-book-btn" href="${bookUrl}" target="_blank">Book</a>
-            </div>`;
-        });
-        html += `</div>`;
-        document.getElementById("deals-results").innerHTML = html;
+        document.getElementById("deals-results").innerHTML = _renderTimeline(trips, data.start_date, data.end_date);
       }
     } catch(e) {
       document.getElementById("deals-results").innerHTML = `<div class="error-card">⚠ ${e.message}</div>`;
     } finally {
       btn.disabled = false;
-      btn.textContent = "🔍 find cheapest in next 3 months";
+      btn.textContent = "📅 Stay blocks — next 90 days";
     }
   }
 
@@ -2864,5 +3044,6 @@ async function openCalendarFromPanel(btn) {
   document.addEventListener("DOMContentLoaded", () => { apInit(); updateTabCounts(); });
 </script>
 
+<div id="tl-tooltip"></div>
 </body>
 </html>

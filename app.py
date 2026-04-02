@@ -687,6 +687,68 @@ def scan_best_deals():
     return jsonify({"deals": deals[:3]})
 
 
+@app.route("/scan_timeline")
+def scan_timeline():
+    orig_param = request.args.get("origins", "BRU,EIN,AMS,NRN")
+    dest_param = request.args.get("destinations", "OPO,SCQ,VGO")
+    origins      = [x.strip().upper() for x in orig_param.split(",") if x.strip()]
+    destinations = [x.strip().upper() for x in dest_param.split(",") if x.strip()]
+    combos = [(o, d) for o in origins for d in destinations if o != d]
+
+    today = datetime.today()
+    # One departure date every 7 days, starting 5 days from now, for 90 days
+    dep_dates = []
+    d = today + timedelta(days=5)
+    while (d - today).days <= 93:
+        dep_dates.append(d)
+        d += timedelta(days=7)
+
+    durations = [3, 5, 7]   # 3 durations keeps API calls reasonable
+
+    tasks = []
+    for dep_dt in dep_dates:
+        dep_str = dep_dt.strftime("%Y-%m-%d")
+        for dur in durations:
+            ret_str = (dep_dt + timedelta(days=dur)).strftime("%Y-%m-%d")
+            for (o, dst) in combos:
+                tasks.append((o, dst, dep_str, ret_str, dur))
+
+    trips = []
+    with ThreadPoolExecutor(max_workers=min(len(tasks), 40)) as executor:
+        future_map = {
+            executor.submit(search_flights, t[0], t[1], t[2], t[3]): t
+            for t in tasks
+        }
+        for future in as_completed(future_map):
+            o, dst, dep, ret, dur = future_map[future]
+            _, _, flight, error = future.result()
+            if not flight or error:
+                continue
+            flight_list = flight if isinstance(flight, list) else [flight]
+            best = min(flight_list, key=lambda f: f.get("price") or float("inf"))
+            price = best.get("price")
+            if not price:
+                continue
+            legs = best.get("flights", [])
+            dep_time_str = legs[0].get("departure_airport", {}).get("time", "") if legs else ""
+            dep_h, dep_m = parse_time(dep_time_str)
+            trips.append({
+                "origin":        o,
+                "destination":   dst,
+                "dep_date":      dep,
+                "ret_date":      ret,
+                "duration":      dur,
+                "price":         price,
+                "airline":       legs[0].get("airline", "") if legs else "",
+                "dep_time":      f"{dep_h:02d}:{dep_m:02d}" if dep_h is not None else "",
+                "booking_token": best.get("booking_token", ""),
+            })
+
+    start_str = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+    end_str   = (today + timedelta(days=95)).strftime("%Y-%m-%d")
+    return jsonify({"trips": trips, "start_date": start_str, "end_date": end_str})
+
+
 @app.route("/share_email", methods=["POST"])
 def share_email():
     """Copy HTML to clipboard, open Gmail compose, then auto-paste into the body."""
