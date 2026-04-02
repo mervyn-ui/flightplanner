@@ -701,7 +701,7 @@ def scan_timeline():
     d = today + timedelta(days=5)
     while (d - today).days <= 93:
         dep_dates.append(d)
-        d += timedelta(days=7)
+        d += timedelta(days=3)
 
     durations = [3, 5, 7]   # 3 durations keeps API calls reasonable
 

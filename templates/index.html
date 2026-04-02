@@ -695,20 +695,29 @@
     .tl-wk-line {
       position: absolute; top: 22px; width: 1px; background: #e0e0e0;
     }
+    .tl-section-hdr {
+      position: absolute; left: 0; width: 52px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 900; color: #444; letter-spacing: 0.04em;
+      text-transform: uppercase; user-select: none;
+    }
+    .tl-section-line {
+      position: absolute; height: 1px; background: #ddd;
+    }
     .tl-block {
-      position: absolute; border-radius: 5px; cursor: pointer;
+      position: absolute; border-radius: 6px; cursor: pointer;
       overflow: hidden; transition: filter 0.12s, transform 0.1s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      display: flex; align-items: center; padding: 0 5px; gap: 3px;
     }
-    .tl-block:hover { filter: brightness(1.18); transform: scaleY(1.08); z-index: 20; }
-    .tl-block-lbl {
-      font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.92);
-      line-height: 1; padding: 4px 4px 0; display: block;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .tl-block:hover { filter: brightness(1.15); transform: scaleY(1.06); z-index: 20; }
+    .tl-block-dest {
+      font-size: 1.05rem; font-weight: 900; color: rgba(255,255,255,0.95);
+      line-height: 1; letter-spacing: -0.03em; flex-shrink: 0;
+      white-space: nowrap;
     }
-    .tl-block-sub {
-      font-size: 0.55rem; color: rgba(255,255,255,0.75);
-      padding: 1px 4px; display: block;
+    .tl-block-price {
+      font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.82);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .tl-legend {
@@ -1863,83 +1872,114 @@ async function openCalendarFromPanel(btn) {
   }
 
   function _renderTimeline(trips, startStr, endStr) {
-    const DAY   = 10;   // px per day
-    const BH    = 26;   // block height px
-    const BGAP  = 3;    // gap between rows
-    const HDR   = 48;   // header height px
+    const DAY    = 18;   // px per day
+    const BH     = 30;   // block height px
+    const BGAP   = 4;    // gap between rows
+    const HDR    = 36;   // month header height px
+    const LLABEL = 54;   // left column width for airport labels
+    const SEC_HDR = 26;  // swim-lane header height
+    const SEC_GAP = 10;  // gap between swim lanes
 
     const t0 = new Date(startStr + "T00:00:00");
     const t1 = new Date(endStr   + "T00:00:00");
     const totalDays = Math.round((t1 - t0) / 86400000);
-    const W = totalDays * DAY;
 
     const prices = trips.map(t => t.price);
     const minP = Math.min(...prices), maxP = Math.max(...prices);
 
-    // Sort by dep_date asc, then price asc
-    const sorted = [...trips].sort((a,b) =>
-      a.dep_date < b.dep_date ? -1 : a.dep_date > b.dep_date ? 1 : a.price - b.price
-    );
+    // Order origins: AMS first, then EIN, NRN, BRU, then any others
+    const ORIGIN_ORDER = ["AMS","EIN","NRN","BRU"];
+    const presentOrigins = [...new Set(trips.map(t => t.origin))];
+    const uniqueOrigins = [
+      ...ORIGIN_ORDER.filter(o => presentOrigins.includes(o)),
+      ...presentOrigins.filter(o => !ORIGIN_ORDER.includes(o))
+    ];
 
-    // Greedy row assignment (no overlap)
-    const rowFree = [];  // rowFree[row] = first free x pixel
-    const placed = sorted.map(trip => {
-      const depDay = Math.round((new Date(trip.dep_date + "T00:00:00") - t0) / 86400000);
-      const x = depDay * DAY;
-      const w = Math.max(trip.duration * DAY - 2, 8);
-      let row = 0;
-      while (rowFree[row] !== undefined && rowFree[row] > x) row++;
-      rowFree[row] = x + w + 2;
-      return { ...trip, x, w, row };
+    const byOrigin = {};
+    trips.forEach(t => { (byOrigin[t.origin] = byOrigin[t.origin] || []).push(t); });
+
+    // Build placed[] with swim lanes
+    const placed = [];
+    let currentY = HDR;
+    let sectionsHTML = "", linesHTML = "";
+
+    uniqueOrigins.forEach(origin => {
+      const group = byOrigin[origin] || [];
+      if (!group.length) return;
+
+      // Section label (in the left column, vertically centered in header row)
+      sectionsHTML += `<div class="tl-section-hdr" style="top:${currentY}px;height:${SEC_HDR}px">${origin}</div>`;
+      // Horizontal separator line across content area
+      linesHTML += `<div class="tl-section-line" style="left:${LLABEL}px;top:${currentY}px;width:${totalDays*DAY}px"></div>`;
+      currentY += SEC_HDR;
+
+      // Sort by dep_date asc, price asc
+      const sorted = [...group].sort((a, b) =>
+        a.dep_date < b.dep_date ? -1 : a.dep_date > b.dep_date ? 1 : a.price - b.price
+      );
+
+      // Greedy row packing (free-floating, no week snapping)
+      const rowFree = [];
+      const laneTop = currentY;
+      sorted.forEach(trip => {
+        const depDay = Math.round((new Date(trip.dep_date + "T00:00:00") - t0) / 86400000);
+        const x = LLABEL + depDay * DAY;
+        const w = Math.max(trip.duration * DAY - 2, 14);
+        let row = 0;
+        while (rowFree[row] !== undefined && rowFree[row] > x) row++;
+        rowFree[row] = x + w + 3;
+        placed.push({ ...trip, x, w, y: laneTop + row * (BH + BGAP) });
+      });
+
+      currentY = laneTop + (rowFree.length || 1) * (BH + BGAP) + SEC_GAP;
     });
 
-    const maxRow = Math.max(...placed.map(t => t.row), 0);
-    const H = HDR + (maxRow + 1) * (BH + BGAP) + 8;
+    const totalH = currentY + 4;
+    const W = LLABEL + totalDays * DAY;
 
-    // Month labels
+    // Month labels + day tick lines
     const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     let headerHTML = "", ticksHTML = "";
     let prevM = -1;
-    for (let day = 0; day < totalDays; day++) {
+    for (let day = 0; day <= totalDays; day++) {
       const dt = new Date(t0.getTime() + day * 86400000);
       if (dt.getMonth() !== prevM) {
-        headerHTML += `<div class="tl-month" style="left:${day*DAY}px">${MON[dt.getMonth()]} ${dt.getFullYear()}</div>`;
+        headerHTML += `<div class="tl-month" style="left:${LLABEL + day*DAY}px">${MON[dt.getMonth()]} ${dt.getFullYear()}</div>`;
         prevM = dt.getMonth();
       }
       if (day % 7 === 0) {
-        ticksHTML += `<div class="tl-wk-line" style="left:${day*DAY}px;height:${H}px"></div>`;
+        ticksHTML += `<div class="tl-wk-line" style="left:${LLABEL + day*DAY}px;top:${HDR}px;height:${totalH - HDR}px"></div>`;
       }
     }
 
     // Blocks
-    let blocksHTML = "";
-    placed.forEach((trip, idx) => {
-      const y = HDR + trip.row * (BH + BGAP);
+    const blocksHTML = placed.map((trip, idx) => {
       const bg = _tlPriceColor(trip.price, minP, maxP);
-      blocksHTML += `<div class="tl-block"
-        style="left:${trip.x}px;top:${y}px;width:${trip.w}px;height:${BH}px;background:${bg}"
+      // Show dest code at large size; price only if block is wide enough
+      const priceSpan = trip.w >= 42 ? `<span class="tl-block-price">€${trip.price}</span>` : "";
+      return `<div class="tl-block"
+        style="left:${trip.x}px;top:${trip.y}px;width:${trip.w}px;height:${BH}px;background:${bg}"
         onmouseenter="tlHover(event,${idx})"
         onmousemove="tlHoverMove(event)"
         onmouseleave="tlHoverOut()"
         onclick="tlClick(${idx})">
-        <span class="tl-block-lbl">€${trip.price}</span>
-        <span class="tl-block-sub">${trip.origin}→${trip.destination}</span>
+        <span class="tl-block-dest">${trip.destination}</span>${priceSpan}
       </div>`;
-    });
+    }).join("");
 
-    _tlTrips = placed;  // store for handlers
+    _tlTrips = placed;
 
     return `
       <div class="tl-wrap">
         <div class="tl-scroll">
-          <div class="tl-inner" style="width:${W}px;height:${H}px">
-            ${ticksHTML}${headerHTML}${blocksHTML}
+          <div class="tl-inner" style="width:${W}px;height:${totalH}px">
+            ${ticksHTML}${headerHTML}${linesHTML}${sectionsHTML}${blocksHTML}
           </div>
         </div>
         <div class="tl-legend">
           <div class="tl-legend-bar"></div>
           <span>cheap → expensive</span>
-          <span style="margin-left:1rem;opacity:0.55">block width = stay duration (3 / 5 / 7 days) &nbsp;·&nbsp; click block for details</span>
+          <span style="margin-left:1rem;opacity:0.55">block width = stay duration · click for details</span>
         </div>
         <div id="tl-detail-panel"></div>
       </div>`;
