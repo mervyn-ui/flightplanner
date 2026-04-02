@@ -605,25 +605,20 @@ def travel_guide():
     else:
         out = None
 
-    # Return: we don't know the user's accommodation, so just compute check-in time.
-    # No drive-time calculation (routing airport→airport gives 0 min which is meaningless).
+    # Return: drive from Spain home (Bueu, Pontevedra) to departure airport.
+    SPAIN_HOME_LAT, SPAIN_HOME_LON = 42.3272768, -8.7863966
     if ret_dep_date and ret_dep_time:
-        try:
-            ret_tz_str = AIRPORT_TZ.get(arr_airport, "Europe/Madrid")
-            ret_tz_obj = ZoneInfo(ret_tz_str)
-            ret_naive  = datetime.strptime(f"{ret_dep_date} {ret_dep_time}", "%Y-%m-%d %H:%M")
-            ret_aware  = ret_naive.replace(tzinfo=ret_tz_obj)
-            checkin    = (ret_aware - timedelta(minutes=90)).strftime("%H:%M")
-            ret = {
-                "date":             ret_dep_date,
-                "departure":        ret_dep_time,
-                "checkin":          checkin,
-                "tz":               ret_aware.strftime("%Z"),
-                "dep_airport_name": AIRPORT_NAMES.get(arr_airport, arr_airport),
-                "arr_airport_name": AIRPORT_NAMES.get(dep_airport, dep_airport),
-            }
-        except Exception:
-            ret = None
+        ret_tz_str = AIRPORT_TZ.get(arr_airport, "Europe/Madrid")
+        ret = schedule(ret_dep_date, ret_dep_time, arr_airport, dep_airport,
+                       SPAIN_HOME_LAT, SPAIN_HOME_LON, ret_tz_str)
+        if ret:
+            try:
+                ret_aware = datetime.strptime(
+                    f"{ret_dep_date} {ret_dep_time}", "%Y-%m-%d %H:%M"
+                ).replace(tzinfo=ZoneInfo(ret_tz_str))
+                ret["tz"] = ret_aware.strftime("%Z")
+            except Exception:
+                ret["tz"] = ""
     else:
         ret = None
 

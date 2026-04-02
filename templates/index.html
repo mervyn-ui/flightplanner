@@ -2804,10 +2804,20 @@ async function openCalendarFromPanel(btn) {
       if (data.return) {
         const r = data.return;
         const tzTag = r.tz ? ` <span style="opacity:0.5;font-size:0.82em">${r.tz}</span>` : "";
+        let retDriveRow = "";
+        if (r.drive_mins) {
+          const driveH = Math.floor(r.drive_mins / 60);
+          const driveM = r.drive_mins % 60;
+          const driveLabel = driveH > 0 ? `${driveH}h ${driveM}min` : `${driveM} min`;
+          retDriveRow = `
+            ${r.leave          ? row("🏠 Leave Bueu",                          r.leave + tzTag)          : ""}
+            ${row("🚗 Drive to " + r.dep_airport_name,                         driveLabel)}
+            ${r.arrive_airport ? row("✅ Arrive " + r.dep_airport_name,        r.arrive_airport + tzTag) : ""}`;
+        }
         rightCol = `
           <div class="tg-col-title">✈ Return &nbsp;·&nbsp; ${fmtDate(r.date)}</div>
-          ${r.checkin ? row("🕐 At " + r.dep_airport_name + " by", r.checkin + tzTag) : ""}
-          ${row("🛫 Departure", r.departure)}
+          ${retDriveRow}
+          ${row("🛫 Departure", r.departure + tzTag)}
           ${trip.ret_arr_time ? row("🛬 Arrive " + r.arr_airport_name, trip.ret_arr_time) : ""}`;
       }
       const calData = JSON.stringify({
