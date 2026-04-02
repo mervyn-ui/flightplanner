@@ -237,36 +237,242 @@ def travel_guide():
     ret_dep_date = request.args.get("ret_dep_date", "")
 
     AIRPORT_COORDS = {
-        "AMS": (52.308601,  4.763889),
-        "BRU": (50.901402,  4.484440),
-        "CRL": (50.459202,  4.453820),
-        "EIN": (51.450101,  5.374520),
-        "NRN": (51.602402,  6.142170),
-        "OPO": (41.236698, -8.670960),
-        "SCQ": (42.896388, -8.415139),
-        "VGO": (42.232300, -8.626700),
-        "LIS": (38.781311, -9.135921),
+        # Netherlands
+        "AMS": (52.308601,  4.763889), "EIN": (51.450101,  5.374520),
+        "RTM": (51.956900,  4.437200), "NRN": (51.602402,  6.142170),
+        "MST": (50.911700,  5.770100), "GRQ": (53.119700,  6.579400),
+        # Belgium / Luxembourg
+        "BRU": (50.901402,  4.484440), "CRL": (50.459202,  4.453820),
+        "LGG": (50.637400,  5.443200), "ANR": (51.189400,  4.460300),
+        "LUX": (49.623400,  6.204400),
+        # Germany
+        "FRA": (50.037900,  8.562200), "MUC": (48.353800, 11.786100),
+        "BER": (52.366700, 13.503300), "DUS": (51.289500,  6.766800),
+        "CGN": (50.865900,  7.142700), "HAM": (53.630400,  9.988200),
+        "HAJ": (52.461100,  9.685000), "STR": (48.689900,  9.222000),
+        "NUE": (49.498700, 11.066900), "HHN": (49.948700,  7.263900),
+        "FKB": (48.779300,  8.080500), "LEJ": (51.432400, 12.241600),
+        "DTM": (51.518300,  7.612400), "SCN": (49.214600,  7.109600),
+        # France
+        "CDG": (49.009700,  2.547900), "ORY": (48.723300,  2.379400),
+        "NCE": (43.658400,  7.215900), "MRS": (43.439300,  5.221400),
+        "LYS": (45.725600,  5.081100), "BOD": (44.828300, -0.715500),
+        "TLS": (43.629300,  1.367800), "NTE": (47.153300, -1.611100),
+        "SXB": (48.538200,  7.628300), "LIL": (50.563000,  3.089400),
+        "BES": (48.447800, -4.418600),
+        # UK
+        "LHR": (51.477500, -0.461400), "LGW": (51.148100, -0.190300),
+        "STN": (51.885000,  0.235000), "MAN": (53.353700, -2.275000),
+        "LTN": (51.874700, -0.368300), "BHX": (52.453900, -1.748000),
+        "EDI": (55.950000, -3.372500), "GLA": (55.871900, -4.433100),
+        "BRS": (51.382700, -2.719100), "NCL": (54.965300, -1.691700),
+        "LPL": (53.333600, -2.849700), "LBA": (53.865900, -1.660600),
+        "ABZ": (57.201900, -2.197800), "BFS": (54.657500, -6.215800),
+        "BHD": (54.618100, -5.872500), "SOU": (50.950300, -1.356800),
+        "EXT": (50.734400, -3.413900),
+        # Ireland
+        "DUB": (53.421300, -6.270000), "ORK": (51.841300, -8.491200),
+        "SNN": (52.702000, -8.924800),
+        # Portugal
+        "OPO": (41.236698, -8.670960), "LIS": (38.781311, -9.135921),
+        "FAO": (37.014500, -7.965900), "PDL": (37.741200,-25.697900),
+        "FNC": (32.697900,-16.778100),
+        # Spain mainland
+        "MAD": (40.471926, -3.562640), "BCN": (41.297078,  2.078464),
+        "AGP": (36.674900, -4.499100), "VLC": (39.489300, -0.481600),
+        "SVQ": (37.418000, -5.893100), "BIO": (43.301100, -2.910600),
+        "SDR": (43.427100, -3.820000), "OVD": (43.563600, -6.034600),
+        "SCQ": (42.896388, -8.415139), "VGO": (42.232300, -8.626700),
+        "PMI": (39.551700,  2.738800), "IBZ": (38.872900,  1.373100),
+        "ALC": (38.282200, -0.558200), "GRO": (41.901100,  2.760300),
+        "ZAZ": (41.666300, -1.041500), "XRY": (36.744600, -6.060100),
+        "GRX": (37.188700, -3.777400), "MAH": (39.862600,  4.218600),
+        # Canary Islands (Atlantic/Canary tz)
+        "LPA": (27.931900,-15.386600), "TFS": (28.044500,-16.572500),
+        "TFN": (28.482700,-16.341400), "FUE": (28.452700,-13.863800),
+        "ACE": (28.945500,-13.605200),
+        # Italy
+        "FCO": (41.800300, 12.238900), "CIA": (41.799400, 12.594900),
+        "MXP": (45.630600,  8.728100), "LIN": (45.445300,  9.276800),
+        "BGY": (45.673900,  9.704200), "VCE": (45.505300, 12.351900),
+        "TSF": (45.648400, 12.194200), "NAP": (40.886000, 14.290800),
+        "CTA": (37.466800, 15.066400), "PMO": (38.179600, 13.091000),
+        "BRI": (41.138900, 16.760800), "VRN": (45.395700, 10.888500),
+        "BLQ": (44.535400, 11.288700), "PSA": (43.683900, 10.392700),
+        # Scandinavia
+        "OSL": (60.193900, 11.100400), "BGO": (60.293400,  5.218100),
+        "SVG": (58.876800,  5.637800), "TRD": (63.457800, 10.923900),
+        "ARN": (59.651900, 17.918600), "GOT": (57.662800, 12.279800),
+        "MMX": (55.536300, 13.376200), "CPH": (55.618000, 12.656100),
+        "BLL": (55.740300,  9.151900), "AAL": (57.092600,  9.849200),
+        # Finland / Baltics
+        "HEL": (60.317200, 24.963300), "TMP": (61.414100, 23.604400),
+        "OUL": (64.930100, 25.354600), "RIX": (56.923600, 23.971100),
+        "VNO": (54.634100, 25.285800), "TLL": (59.413300, 24.832800),
+        # Switzerland / Austria
+        "ZRH": (47.464700,  8.549200), "GVA": (46.238100,  6.108900),
+        "BSL": (47.589600,  7.529900), "VIE": (48.110300, 16.569700),
+        "SZG": (47.793300, 13.004300), "INN": (47.260200, 11.344000),
+        "GRZ": (46.991100, 15.439600), "LNZ": (48.233200, 14.187500),
+        # Central / Eastern Europe
+        "PRG": (50.100800, 14.260000), "BTS": (48.170200, 17.212700),
+        "BRQ": (49.151300, 16.694400), "WAW": (52.165700, 20.967100),
+        "KRK": (50.077800, 19.784800), "GDN": (54.377600, 18.466200),
+        "WRO": (51.102700, 16.885800), "POZ": (52.421000, 16.826300),
+        "KTW": (50.474300, 19.080000), "BUD": (47.429800, 19.261100),
+        "OTP": (44.571100, 26.085000), "CLJ": (46.785200, 23.686200),
+        "SOF": (42.696700, 23.411400),
+        # Balkans
+        "BEG": (44.818400, 20.309100), "LJU": (46.223700, 14.457600),
+        "ZAG": (45.742900, 16.068800), "SPU": (43.538900, 16.298000),
+        "DBV": (42.561400, 18.268200), "TGD": (42.359400, 19.251900),
+        "TIA": (41.414700, 19.720600), "SKP": (41.961600, 21.621400),
+        "SJJ": (43.824600, 18.331500),
+        # Greece / Cyprus
+        "ATH": (37.936400, 23.944500), "SKG": (40.519700, 22.970900),
+        "HER": (35.339700, 25.180300), "RHO": (36.405400, 28.086200),
+        "CFU": (39.601900, 19.911700), "KGS": (36.793300, 26.717300),
+        "JMK": (37.435100, 25.348100), "JTR": (36.399200, 25.479300),
+        "CHQ": (35.531700, 24.149700), "LCA": (34.875100, 33.624900),
+        "PFO": (34.717900, 32.485700),
+        # Turkey / Iceland / Malta / N.Africa
+        "IST": (41.275300, 28.751900), "SAW": (40.898600, 29.309200),
+        "ADB": (38.292400, 27.157000), "AYT": (36.898700, 30.799200),
+        "KEF": (63.985000,-22.605600), "MLA": (35.857400, 14.477500),
+        "CMN": (33.367500, -7.589700), "RAK": (31.606900, -8.036300),
+        "AGA": (30.325000, -9.413000), "TUN": (36.851000, 10.227200),
     }
 
     AIRPORT_NAMES = {
-        "AMS": "Amsterdam Schiphol",
-        "BRU": "Brussels Zaventem",
-        "CRL": "Charleroi",
-        "EIN": "Eindhoven",
-        "NRN": "Weeze",
-        "OPO": "Porto",
-        "SCQ": "Santiago de Compostela",
-        "VGO": "Vigo",
-        "LIS": "Lisbon",
+        "AMS": "Amsterdam Schiphol",   "EIN": "Eindhoven",
+        "RTM": "Rotterdam",            "NRN": "Weeze",
+        "MST": "Maastricht",           "GRQ": "Groningen",
+        "BRU": "Brussels Zaventem",    "CRL": "Charleroi",
+        "LGG": "Liège",                "ANR": "Antwerp",
+        "LUX": "Luxembourg",
+        "FRA": "Frankfurt",            "MUC": "Munich",
+        "BER": "Berlin Brandenburg",   "DUS": "Düsseldorf",
+        "CGN": "Cologne Bonn",         "HAM": "Hamburg",
+        "HAJ": "Hannover",             "STR": "Stuttgart",
+        "NUE": "Nuremberg",            "HHN": "Frankfurt Hahn",
+        "FKB": "Baden-Baden",          "LEJ": "Leipzig Halle",
+        "DTM": "Dortmund",             "SCN": "Saarbrücken",
+        "CDG": "Paris CDG",            "ORY": "Paris Orly",
+        "NCE": "Nice",                 "MRS": "Marseille",
+        "LYS": "Lyon",                 "BOD": "Bordeaux",
+        "TLS": "Toulouse",             "NTE": "Nantes",
+        "SXB": "Strasbourg",           "LIL": "Lille",
+        "BES": "Brest",
+        "LHR": "London Heathrow",      "LGW": "London Gatwick",
+        "STN": "London Stansted",      "MAN": "Manchester",
+        "LTN": "London Luton",         "BHX": "Birmingham",
+        "EDI": "Edinburgh",            "GLA": "Glasgow",
+        "BRS": "Bristol",              "NCL": "Newcastle",
+        "LPL": "Liverpool",            "LBA": "Leeds Bradford",
+        "ABZ": "Aberdeen",             "BFS": "Belfast Intl",
+        "BHD": "Belfast City",         "SOU": "Southampton",
+        "EXT": "Exeter",
+        "DUB": "Dublin",               "ORK": "Cork",
+        "SNN": "Shannon",
+        "OPO": "Porto",                "LIS": "Lisbon",
+        "FAO": "Faro",                 "PDL": "Azores (Ponta Delgada)",
+        "FNC": "Madeira (Funchal)",
+        "MAD": "Madrid Barajas",       "BCN": "Barcelona El Prat",
+        "AGP": "Málaga",               "VLC": "Valencia",
+        "SVQ": "Seville",              "BIO": "Bilbao",
+        "SDR": "Santander",            "OVD": "Asturias",
+        "SCQ": "Santiago de Compostela","VGO": "Vigo",
+        "PMI": "Palma de Mallorca",    "IBZ": "Ibiza",
+        "ALC": "Alicante",             "GRO": "Girona",
+        "ZAZ": "Zaragoza",             "XRY": "Jerez",
+        "GRX": "Granada",              "MAH": "Menorca",
+        "LPA": "Gran Canaria",         "TFS": "Tenerife South",
+        "TFN": "Tenerife North",       "FUE": "Fuerteventura",
+        "ACE": "Lanzarote",
+        "FCO": "Rome Fiumicino",       "CIA": "Rome Ciampino",
+        "MXP": "Milan Malpensa",       "LIN": "Milan Linate",
+        "BGY": "Milan Bergamo",        "VCE": "Venice",
+        "TSF": "Venice Treviso",       "NAP": "Naples",
+        "CTA": "Catania",              "PMO": "Palermo",
+        "BRI": "Bari",                 "VRN": "Verona",
+        "BLQ": "Bologna",              "PSA": "Pisa",
+        "OSL": "Oslo Gardermoen",      "BGO": "Bergen",
+        "SVG": "Stavanger",            "TRD": "Trondheim",
+        "ARN": "Stockholm Arlanda",    "GOT": "Gothenburg",
+        "MMX": "Malmö",                "CPH": "Copenhagen",
+        "BLL": "Billund",              "AAL": "Aalborg",
+        "HEL": "Helsinki",             "TMP": "Tampere",
+        "OUL": "Oulu",
+        "RIX": "Riga",                 "VNO": "Vilnius",
+        "TLL": "Tallinn",
+        "ZRH": "Zurich",               "GVA": "Geneva",
+        "BSL": "Basel",                "VIE": "Vienna",
+        "SZG": "Salzburg",             "INN": "Innsbruck",
+        "GRZ": "Graz",                 "LNZ": "Linz",
+        "PRG": "Prague",               "BTS": "Bratislava",
+        "BRQ": "Brno",                 "WAW": "Warsaw",
+        "KRK": "Krakow",               "GDN": "Gdansk",
+        "WRO": "Wroclaw",              "POZ": "Poznan",
+        "KTW": "Katowice",             "BUD": "Budapest",
+        "OTP": "Bucharest",            "CLJ": "Cluj-Napoca",
+        "SOF": "Sofia",                "BEG": "Belgrade",
+        "LJU": "Ljubljana",            "ZAG": "Zagreb",
+        "SPU": "Split",                "DBV": "Dubrovnik",
+        "TGD": "Podgorica",            "TIA": "Tirana",
+        "SKP": "Skopje",               "SJJ": "Sarajevo",
+        "ATH": "Athens",               "SKG": "Thessaloniki",
+        "HER": "Heraklion",            "RHO": "Rhodes",
+        "CFU": "Corfu",                "KGS": "Kos",
+        "JMK": "Mykonos",              "JTR": "Santorini",
+        "CHQ": "Chania",               "LCA": "Larnaca",
+        "PFO": "Paphos",               "IST": "Istanbul",
+        "SAW": "Istanbul Sabiha",      "ADB": "Izmir",
+        "AYT": "Antalya",              "KEF": "Reykjavik",
+        "MLA": "Malta",
+        "CMN": "Casablanca",           "RAK": "Marrakech",
+        "AGA": "Agadir",               "TUN": "Tunis",
     }
 
     # Timezone per airport
     AIRPORT_TZ = {
-        "AMS": "Europe/Amsterdam", "BRU": "Europe/Brussels",
-        "CRL": "Europe/Brussels",  "EIN": "Europe/Amsterdam",
-        "NRN": "Europe/Amsterdam", "OPO": "Europe/Lisbon",
-        "SCQ": "Europe/Madrid",    "VGO": "Europe/Madrid",
-        "LIS": "Europe/Lisbon",
+        **{k: "Europe/Amsterdam" for k in ["AMS","EIN","RTM","NRN","MST","GRQ"]},
+        **{k: "Europe/Brussels"  for k in ["BRU","CRL","LGG","ANR","LUX"]},
+        **{k: "Europe/Berlin"    for k in ["FRA","MUC","BER","DUS","CGN","HAM","HAJ","STR","NUE","HHN","FKB","LEJ","DTM","SCN"]},
+        **{k: "Europe/Paris"     for k in ["CDG","ORY","NCE","MRS","LYS","BOD","TLS","NTE","SXB","LIL","BES"]},
+        **{k: "Europe/London"    for k in ["LHR","LGW","STN","MAN","LTN","BHX","EDI","GLA","BRS","NCL","LPL","LBA","ABZ","BFS","BHD","SOU","EXT"]},
+        **{k: "Europe/Dublin"    for k in ["DUB","ORK","SNN"]},
+        **{k: "Europe/Lisbon"    for k in ["OPO","LIS","FAO","PDL","FNC"]},
+        **{k: "Atlantic/Canary"  for k in ["LPA","TFS","TFN","FUE","ACE"]},
+        **{k: "Europe/Madrid"    for k in ["MAD","BCN","AGP","VLC","SVQ","BIO","SDR","OVD","SCQ","VGO","PMI","IBZ","ALC","GRO","ZAZ","XRY","GRX","MAH"]},
+        **{k: "Europe/Rome"      for k in ["FCO","CIA","MXP","LIN","BGY","VCE","TSF","NAP","CTA","PMO","BRI","VRN","BLQ","PSA"]},
+        **{k: "Europe/Oslo"      for k in ["OSL","BGO","SVG","TRD"]},
+        **{k: "Europe/Stockholm" for k in ["ARN","GOT","MMX"]},
+        **{k: "Europe/Copenhagen" for k in ["CPH","BLL","AAL"]},
+        **{k: "Europe/Helsinki"  for k in ["HEL","TMP","OUL"]},
+        **{k: "Europe/Riga"      for k in ["RIX"]},
+        **{k: "Europe/Vilnius"   for k in ["VNO"]},
+        **{k: "Europe/Tallinn"   for k in ["TLL"]},
+        **{k: "Europe/Zurich"    for k in ["ZRH","GVA","BSL"]},
+        **{k: "Europe/Vienna"    for k in ["VIE","SZG","INN","GRZ","LNZ"]},
+        **{k: "Europe/Prague"    for k in ["PRG","BRQ"]},
+        **{k: "Europe/Bratislava" for k in ["BTS"]},
+        **{k: "Europe/Warsaw"    for k in ["WAW","KRK","GDN","WRO","POZ","KTW"]},
+        **{k: "Europe/Budapest"  for k in ["BUD"]},
+        **{k: "Europe/Bucharest" for k in ["OTP","CLJ"]},
+        **{k: "Europe/Sofia"     for k in ["SOF"]},
+        **{k: "Europe/Belgrade"  for k in ["BEG","SJJ"]},
+        **{k: "Europe/Ljubljana" for k in ["LJU"]},
+        **{k: "Europe/Zagreb"    for k in ["ZAG","SPU","DBV"]},
+        **{k: "Europe/Podgorica" for k in ["TGD"]},
+        **{k: "Europe/Tirane"    for k in ["TIA"]},
+        **{k: "Europe/Skopje"    for k in ["SKP"]},
+        **{k: "Europe/Athens"    for k in ["ATH","SKG","HER","RHO","CFU","KGS","JMK","JTR","CHQ"]},
+        **{k: "Asia/Nicosia"     for k in ["LCA","PFO"]},
+        **{k: "Europe/Istanbul"  for k in ["IST","SAW","ADB","AYT"]},
+        **{k: "Atlantic/Reykjavik" for k in ["KEF"]},
+        **{k: "Europe/Malta"     for k in ["MLA"]},
+        **{k: "Africa/Casablanca" for k in ["CMN","RAK","AGA"]},
+        **{k: "Africa/Tunis"     for k in ["TUN"]},
     }
 
     def geocode_structured(pc, city):
@@ -373,7 +579,6 @@ def travel_guide():
     if home_pc or home_city:
         home_lat, home_lon = geocode_structured(home_pc, home_city)
         if home_lat is None:
-            # Geocoding failed — still show basic flight info
             out = {
                 "date":             dep_date,
                 "dep_airport_name": AIRPORT_NAMES.get(dep_airport, dep_airport),
@@ -383,6 +588,8 @@ def travel_guide():
             }
         else:
             out = schedule(dep_date, dep_time, dep_airport, arr_airport, home_lat, home_lon, "Europe/Amsterdam")
+            if out:
+                out["home_label"] = f"{home_pc} {home_city}".strip()
     elif home_address:
         home_lat, home_lon = geocode(home_address)
         if home_lat is None:
@@ -398,13 +605,25 @@ def travel_guide():
     else:
         out = None
 
-    # Return: only compute when both date and time are known
-    # Use the destination airport's own coordinates as starting point
-    # (traveller is near the airport — gives a sensible ~15 min buffer)
-    if ret_dep_date and ret_dep_time and arr_airport in AIRPORT_COORDS:
-        ret_lat, ret_lon = AIRPORT_COORDS[arr_airport]
-        ret_tz = AIRPORT_TZ.get(arr_airport, "Europe/Madrid")
-        ret = schedule(ret_dep_date, ret_dep_time, arr_airport, dep_airport, ret_lat, ret_lon, ret_tz)
+    # Return: we don't know the user's accommodation, so just compute check-in time.
+    # No drive-time calculation (routing airport→airport gives 0 min which is meaningless).
+    if ret_dep_date and ret_dep_time:
+        try:
+            ret_tz_str = AIRPORT_TZ.get(arr_airport, "Europe/Madrid")
+            ret_tz_obj = ZoneInfo(ret_tz_str)
+            ret_naive  = datetime.strptime(f"{ret_dep_date} {ret_dep_time}", "%Y-%m-%d %H:%M")
+            ret_aware  = ret_naive.replace(tzinfo=ret_tz_obj)
+            checkin    = (ret_aware - timedelta(minutes=90)).strftime("%H:%M")
+            ret = {
+                "date":             ret_dep_date,
+                "departure":        ret_dep_time,
+                "checkin":          checkin,
+                "tz":               ret_aware.strftime("%Z"),
+                "dep_airport_name": AIRPORT_NAMES.get(arr_airport, arr_airport),
+                "arr_airport_name": AIRPORT_NAMES.get(dep_airport, dep_airport),
+            }
+        except Exception:
+            ret = None
     else:
         ret = None
 

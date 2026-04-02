@@ -526,6 +526,13 @@
     .tg-row:last-of-type { border-bottom: none; }
     .tg-label { color: #666; white-space: nowrap; flex-shrink: 0; }
     .tg-value { font-weight: 700; color: #1a1a2e; text-align: right; }
+    .tg-maps-row { display: flex; gap: 0.5rem; margin: 0.35rem 0 0.1rem; }
+    .tg-map-link {
+      font-size: 0.72rem; font-weight: 600; padding: 0.22rem 0.6rem;
+      border-radius: 20px; border: 1.5px solid #4f4300; color: #4f4300;
+      text-decoration: none; white-space: nowrap;
+    }
+    .tg-map-link:hover { background: #4f4300; color: #fff; }
     .tg-footer {
       display: flex;
       justify-content: flex-end;
@@ -2109,66 +2116,196 @@ async function openCalendarFromPanel(btn) {
 
   // ── Airport picker ────────────────────────────────────────────
   const AP_AIRPORTS = [
-    { iata:"AMS", city:"Amsterdam",          name:"Schiphol",                        country:"Netherlands", flag:"🇳🇱", lat:52.3086, lon:4.7639  },
-    { iata:"EIN", city:"Eindhoven",          name:"Eindhoven Airport",               country:"Netherlands", flag:"🇳🇱", lat:51.4501, lon:5.3745  },
-    { iata:"RTM", city:"Rotterdam",          name:"Rotterdam The Hague Airport",     country:"Netherlands", flag:"🇳🇱", lat:51.9569, lon:4.4372  },
-    { iata:"BRU", city:"Brussels",          name:"Brussels Zaventem",               country:"Belgium",     flag:"🇧🇪", lat:50.9014, lon:4.4844  },
-    { iata:"CRL", city:"Brussels",          name:"Brussels South Charleroi",        country:"Belgium",     flag:"🇧🇪", lat:50.4592, lon:4.4538  },
-    { iata:"LGG", city:"Liège",             name:"Liège Airport",                   country:"Belgium",     flag:"🇧🇪", lat:50.6374, lon:5.4432  },
-    { iata:"NRN", city:"Düsseldorf/Weeze",  name:"Weeze Airport",                   country:"Germany",     flag:"🇩🇪", lat:51.6024, lon:6.1422  },
-    { iata:"DUS", city:"Düsseldorf",        name:"Düsseldorf Airport",              country:"Germany",     flag:"🇩🇪", lat:51.2895, lon:6.7668  },
-    { iata:"CGN", city:"Cologne",           name:"Cologne Bonn Airport",            country:"Germany",     flag:"🇩🇪", lat:50.8659, lon:7.1427  },
-    { iata:"DTM", city:"Dortmund",          name:"Dortmund Airport",                country:"Germany",     flag:"🇩🇪", lat:51.5183, lon:7.6124  },
-    { iata:"MUC", city:"Munich",            name:"Munich Airport",                  country:"Germany",     flag:"🇩🇪", lat:48.3538, lon:11.7861 },
-    { iata:"FRA", city:"Frankfurt",         name:"Frankfurt Airport",               country:"Germany",     flag:"🇩🇪", lat:50.0379, lon:8.5622  },
-    { iata:"OPO", city:"Porto",             name:"Francisco Sá Carneiro",           country:"Portugal",    flag:"🇵🇹", lat:41.2367, lon:-8.6710 },
-    { iata:"LIS", city:"Lisbon",            name:"Humberto Delgado Airport",        country:"Portugal",    flag:"🇵🇹", lat:38.7813, lon:-9.1359 },
-    { iata:"FAO", city:"Faro",              name:"Faro Airport",                    country:"Portugal",    flag:"🇵🇹", lat:37.0145, lon:-7.9659 },
-    { iata:"SCQ", city:"Santiago de Compostela", name:"Santiago de Compostela Airport", country:"Spain",  flag:"🇪🇸", lat:42.8964, lon:-8.4151 },
-    { iata:"VGO", city:"Vigo",              name:"Vigo–Peinador Airport",           country:"Spain",       flag:"🇪🇸", lat:42.2318, lon:-8.6268 },
-    { iata:"OVD", city:"Asturias",          name:"Asturias Airport",                country:"Spain",       flag:"🇪🇸", lat:43.5636, lon:-6.0346 },
-    { iata:"SDR", city:"Santander",         name:"Seve Ballesteros Airport",        country:"Spain",       flag:"🇪🇸", lat:43.4271, lon:-3.8200 },
-    { iata:"BIO", city:"Bilbao",            name:"Bilbao Airport",                  country:"Spain",       flag:"🇪🇸", lat:43.3011, lon:-2.9106 },
-    { iata:"MAD", city:"Madrid",            name:"Barajas Airport",                 country:"Spain",       flag:"🇪🇸", lat:40.4719, lon:-3.5626 },
-    { iata:"BCN", city:"Barcelona",         name:"El Prat Airport",                 country:"Spain",       flag:"🇪🇸", lat:41.2971, lon:2.0785  },
-    { iata:"AGP", city:"Málaga",            name:"Costa del Sol Airport",           country:"Spain",       flag:"🇪🇸", lat:36.6749, lon:-4.4991 },
-    { iata:"LPA", city:"Gran Canaria",      name:"Gran Canaria Airport",            country:"Spain",       flag:"🇪🇸", lat:27.9319, lon:-15.3866},
-    { iata:"TFS", city:"Tenerife",          name:"Tenerife South Airport",          country:"Spain",       flag:"🇪🇸", lat:28.0445, lon:-16.5725},
-    { iata:"PMI", city:"Palma de Mallorca", name:"Palma Airport",                   country:"Spain",       flag:"🇪🇸", lat:39.5517, lon:2.7388  },
-    { iata:"IBZ", city:"Ibiza",             name:"Ibiza Airport",                   country:"Spain",       flag:"🇪🇸", lat:38.8729, lon:1.3731  },
-    { iata:"ALC", city:"Alicante",          name:"Alicante Airport",                country:"Spain",       flag:"🇪🇸", lat:38.2822, lon:-0.5582 },
-    { iata:"VLC", city:"Valencia",          name:"Valencia Airport",                country:"Spain",       flag:"🇪🇸", lat:39.4893, lon:-0.4816 },
-    { iata:"SVQ", city:"Seville",           name:"Seville Airport",                 country:"Spain",       flag:"🇪🇸", lat:37.4180, lon:-5.8931 },
-    { iata:"ACE", city:"Lanzarote",         name:"Lanzarote Airport",               country:"Spain",       flag:"🇪🇸", lat:28.9455, lon:-13.6052},
-    { iata:"FUE", city:"Fuerteventura",     name:"Fuerteventura Airport",           country:"Spain",       flag:"🇪🇸", lat:28.4527, lon:-13.8638},
-    { iata:"LHR", city:"London",            name:"Heathrow Airport",                country:"UK",          flag:"🇬🇧", lat:51.4775, lon:-0.4614 },
-    { iata:"LGW", city:"London",            name:"Gatwick Airport",                 country:"UK",          flag:"🇬🇧", lat:51.1481, lon:-0.1903 },
-    { iata:"STN", city:"London",            name:"Stansted Airport",                country:"UK",          flag:"🇬🇧", lat:51.8850, lon:0.2350  },
-    { iata:"CDG", city:"Paris",             name:"Charles de Gaulle Airport",       country:"France",      flag:"🇫🇷", lat:49.0097, lon:2.5479  },
-    { iata:"ORY", city:"Paris",             name:"Orly Airport",                    country:"France",      flag:"🇫🇷", lat:48.7233, lon:2.3794  },
-    { iata:"NCE", city:"Nice",              name:"Côte d'Azur Airport",             country:"France",      flag:"🇫🇷", lat:43.6584, lon:7.2159  },
-    { iata:"MRS", city:"Marseille",         name:"Marseille Provence Airport",      country:"France",      flag:"🇫🇷", lat:43.4393, lon:5.2214  },
-    { iata:"FCO", city:"Rome",              name:"Fiumicino Airport",               country:"Italy",       flag:"🇮🇹", lat:41.8003, lon:12.2389 },
-    { iata:"MXP", city:"Milan",             name:"Malpensa Airport",                country:"Italy",       flag:"🇮🇹", lat:45.6306, lon:8.7281  },
-    { iata:"ATH", city:"Athens",            name:"Eleftherios Venizelos Airport",   country:"Greece",      flag:"🇬🇷", lat:37.9364, lon:23.9445 },
-    { iata:"HER", city:"Heraklion",         name:"Heraklion Airport",               country:"Greece",      flag:"🇬🇷", lat:35.3397, lon:25.1803 },
-    { iata:"RHO", city:"Rhodes",            name:"Rhodes Airport",                  country:"Greece",      flag:"🇬🇷", lat:36.4054, lon:28.0862 },
-    { iata:"CFU", city:"Corfu",             name:"Ioannis Kapodistrias Airport",    country:"Greece",      flag:"🇬🇷", lat:39.6019, lon:19.9117 },
-    { iata:"MLA", city:"Malta",             name:"Malta International Airport",     country:"Malta",       flag:"🇲🇹", lat:35.8574, lon:14.4775 },
-    { iata:"VIE", city:"Vienna",            name:"Vienna International Airport",    country:"Austria",     flag:"🇦🇹", lat:48.1103, lon:16.5697 },
-    { iata:"ZRH", city:"Zurich",            name:"Zurich Airport",                  country:"Switzerland", flag:"🇨🇭", lat:47.4647, lon:8.5492  },
-    { iata:"GVA", city:"Geneva",            name:"Geneva Airport",                  country:"Switzerland", flag:"🇨🇭", lat:46.2381, lon:6.1089  },
-    { iata:"CPH", city:"Copenhagen",        name:"Kastrup Airport",                 country:"Denmark",     flag:"🇩🇰", lat:55.6180, lon:12.6561 },
-    { iata:"ARN", city:"Stockholm",         name:"Arlanda Airport",                 country:"Sweden",      flag:"🇸🇪", lat:59.6519, lon:17.9186 },
-    { iata:"HEL", city:"Helsinki",          name:"Helsinki-Vantaa Airport",         country:"Finland",     flag:"🇫🇮", lat:60.3172, lon:24.9633 },
-    { iata:"DUB", city:"Dublin",            name:"Dublin Airport",                  country:"Ireland",     flag:"🇮🇪", lat:53.4213, lon:-6.2700 },
-    { iata:"PRG", city:"Prague",            name:"Václav Havel Airport",            country:"Czechia",     flag:"🇨🇿", lat:50.1008, lon:14.2600 },
-    { iata:"WAW", city:"Warsaw",            name:"Chopin Airport",                  country:"Poland",      flag:"🇵🇱", lat:52.1657, lon:20.9671 },
-    { iata:"BUD", city:"Budapest",          name:"Budapest Liszt Ferenc Airport",   country:"Hungary",     flag:"🇭🇺", lat:47.4298, lon:19.2611 },
-    { iata:"SOF", city:"Sofia",             name:"Sofia Airport",                   country:"Bulgaria",    flag:"🇧🇬", lat:42.6967, lon:23.4114 },
-    { iata:"OTP", city:"Bucharest",         name:"Henri Coandă Airport",            country:"Romania",     flag:"🇷🇴", lat:44.5711, lon:26.0850 },
-    { iata:"IST", city:"Istanbul",          name:"Istanbul Airport",                country:"Turkey",      flag:"🇹🇷", lat:41.2753, lon:28.7519 },
-    { iata:"AYT", city:"Antalya",           name:"Antalya Airport",                 country:"Turkey",      flag:"🇹🇷", lat:36.8987, lon:30.7992 },
+    // Netherlands
+    { iata:"AMS", city:"Amsterdam",           name:"Schiphol",                         country:"Netherlands",    flag:"🇳🇱", lat:52.3086, lon: 4.7639 },
+    { iata:"EIN", city:"Eindhoven",           name:"Eindhoven Airport",                country:"Netherlands",    flag:"🇳🇱", lat:51.4501, lon: 5.3745 },
+    { iata:"RTM", city:"Rotterdam",           name:"Rotterdam The Hague",              country:"Netherlands",    flag:"🇳🇱", lat:51.9569, lon: 4.4372 },
+    { iata:"MST", city:"Maastricht",          name:"Maastricht Aachen Airport",        country:"Netherlands",    flag:"🇳🇱", lat:50.9117, lon: 5.7701 },
+    { iata:"GRQ", city:"Groningen",           name:"Groningen Airport Eelde",          country:"Netherlands",    flag:"🇳🇱", lat:53.1197, lon: 6.5794 },
+    // Belgium / Luxembourg
+    { iata:"BRU", city:"Brussels",            name:"Brussels Zaventem",                country:"Belgium",        flag:"🇧🇪", lat:50.9014, lon: 4.4844 },
+    { iata:"CRL", city:"Brussels South",      name:"Brussels Charleroi",               country:"Belgium",        flag:"🇧🇪", lat:50.4592, lon: 4.4538 },
+    { iata:"LGG", city:"Liège",               name:"Liège Airport",                    country:"Belgium",        flag:"🇧🇪", lat:50.6374, lon: 5.4432 },
+    { iata:"ANR", city:"Antwerp",             name:"Antwerp Airport",                  country:"Belgium",        flag:"🇧🇪", lat:51.1894, lon: 4.4603 },
+    { iata:"LUX", city:"Luxembourg",          name:"Luxembourg Airport",               country:"Luxembourg",     flag:"🇱🇺", lat:49.6234, lon: 6.2044 },
+    // Germany
+    { iata:"NRN", city:"Düsseldorf/Weeze",    name:"Weeze Airport",                    country:"Germany",        flag:"🇩🇪", lat:51.6024, lon: 6.1422 },
+    { iata:"DUS", city:"Düsseldorf",          name:"Düsseldorf Airport",               country:"Germany",        flag:"🇩🇪", lat:51.2895, lon: 6.7668 },
+    { iata:"CGN", city:"Cologne",             name:"Cologne Bonn Airport",             country:"Germany",        flag:"🇩🇪", lat:50.8659, lon: 7.1427 },
+    { iata:"DTM", city:"Dortmund",            name:"Dortmund Airport",                 country:"Germany",        flag:"🇩🇪", lat:51.5183, lon: 7.6124 },
+    { iata:"FRA", city:"Frankfurt",           name:"Frankfurt Airport",                country:"Germany",        flag:"🇩🇪", lat:50.0379, lon: 8.5622 },
+    { iata:"MUC", city:"Munich",              name:"Munich Airport",                   country:"Germany",        flag:"🇩🇪", lat:48.3538, lon:11.7861 },
+    { iata:"BER", city:"Berlin",              name:"Berlin Brandenburg Airport",       country:"Germany",        flag:"🇩🇪", lat:52.3667, lon:13.5033 },
+    { iata:"HAM", city:"Hamburg",             name:"Hamburg Airport",                  country:"Germany",        flag:"🇩🇪", lat:53.6304, lon: 9.9882 },
+    { iata:"HAJ", city:"Hannover",            name:"Hannover Airport",                 country:"Germany",        flag:"🇩🇪", lat:52.4611, lon: 9.6850 },
+    { iata:"STR", city:"Stuttgart",           name:"Stuttgart Airport",                country:"Germany",        flag:"🇩🇪", lat:48.6899, lon: 9.2220 },
+    { iata:"NUE", city:"Nuremberg",           name:"Nuremberg Airport",                country:"Germany",        flag:"🇩🇪", lat:49.4987, lon:11.0669 },
+    { iata:"HHN", city:"Frankfurt Hahn",      name:"Frankfurt Hahn Airport",           country:"Germany",        flag:"🇩🇪", lat:49.9487, lon: 7.2639 },
+    { iata:"FKB", city:"Karlsruhe",           name:"Karlsruhe/Baden-Baden Airport",    country:"Germany",        flag:"🇩🇪", lat:48.7793, lon: 8.0805 },
+    { iata:"LEJ", city:"Leipzig",             name:"Leipzig Halle Airport",            country:"Germany",        flag:"🇩🇪", lat:51.4324, lon:12.2416 },
+    // France
+    { iata:"CDG", city:"Paris",               name:"Charles de Gaulle",                country:"France",         flag:"🇫🇷", lat:49.0097, lon: 2.5479 },
+    { iata:"ORY", city:"Paris Orly",          name:"Paris Orly Airport",               country:"France",         flag:"🇫🇷", lat:48.7233, lon: 2.3794 },
+    { iata:"NCE", city:"Nice",                name:"Nice Côte d'Azur",                 country:"France",         flag:"🇫🇷", lat:43.6584, lon: 7.2159 },
+    { iata:"MRS", city:"Marseille",           name:"Marseille Provence",               country:"France",         flag:"🇫🇷", lat:43.4393, lon: 5.2214 },
+    { iata:"LYS", city:"Lyon",                name:"Lyon Saint-Exupéry",               country:"France",         flag:"🇫🇷", lat:45.7256, lon: 5.0811 },
+    { iata:"BOD", city:"Bordeaux",            name:"Bordeaux–Mérignac Airport",        country:"France",         flag:"🇫🇷", lat:44.8283, lon:-0.7155 },
+    { iata:"TLS", city:"Toulouse",            name:"Toulouse Blagnac Airport",         country:"France",         flag:"🇫🇷", lat:43.6293, lon: 1.3678 },
+    { iata:"NTE", city:"Nantes",              name:"Nantes Atlantique Airport",        country:"France",         flag:"🇫🇷", lat:47.1533, lon:-1.6111 },
+    { iata:"SXB", city:"Strasbourg",          name:"Strasbourg Airport",               country:"France",         flag:"🇫🇷", lat:48.5382, lon: 7.6283 },
+    { iata:"LIL", city:"Lille",               name:"Lille Airport",                    country:"France",         flag:"🇫🇷", lat:50.5630, lon: 3.0894 },
+    { iata:"BES", city:"Brest",               name:"Brest Bretagne Airport",           country:"France",         flag:"🇫🇷", lat:48.4478, lon:-4.4186 },
+    // UK
+    { iata:"LHR", city:"London",              name:"London Heathrow",                  country:"UK",             flag:"🇬🇧", lat:51.4775, lon:-0.4614 },
+    { iata:"LGW", city:"London",              name:"London Gatwick",                   country:"UK",             flag:"🇬🇧", lat:51.1481, lon:-0.1903 },
+    { iata:"STN", city:"London",              name:"London Stansted",                  country:"UK",             flag:"🇬🇧", lat:51.8850, lon: 0.2350 },
+    { iata:"LTN", city:"London",              name:"London Luton",                     country:"UK",             flag:"🇬🇧", lat:51.8747, lon:-0.3683 },
+    { iata:"MAN", city:"Manchester",          name:"Manchester Airport",               country:"UK",             flag:"🇬🇧", lat:53.3537, lon:-2.2750 },
+    { iata:"BHX", city:"Birmingham",          name:"Birmingham Airport",               country:"UK",             flag:"🇬🇧", lat:52.4539, lon:-1.7480 },
+    { iata:"EDI", city:"Edinburgh",           name:"Edinburgh Airport",                country:"UK",             flag:"🇬🇧", lat:55.9500, lon:-3.3725 },
+    { iata:"GLA", city:"Glasgow",             name:"Glasgow Airport",                  country:"UK",             flag:"🇬🇧", lat:55.8719, lon:-4.4331 },
+    { iata:"BRS", city:"Bristol",             name:"Bristol Airport",                  country:"UK",             flag:"🇬🇧", lat:51.3827, lon:-2.7191 },
+    { iata:"NCL", city:"Newcastle",           name:"Newcastle Airport",                country:"UK",             flag:"🇬🇧", lat:54.9653, lon:-1.6917 },
+    { iata:"LPL", city:"Liverpool",           name:"Liverpool John Lennon",            country:"UK",             flag:"🇬🇧", lat:53.3336, lon:-2.8497 },
+    { iata:"LBA", city:"Leeds",               name:"Leeds Bradford Airport",           country:"UK",             flag:"🇬🇧", lat:53.8659, lon:-1.6606 },
+    { iata:"ABZ", city:"Aberdeen",            name:"Aberdeen Airport",                 country:"UK",             flag:"🇬🇧", lat:57.2019, lon:-2.1978 },
+    { iata:"BFS", city:"Belfast",             name:"Belfast International",            country:"UK",             flag:"🇬🇧", lat:54.6575, lon:-6.2158 },
+    { iata:"BHD", city:"Belfast",             name:"Belfast City Airport",             country:"UK",             flag:"🇬🇧", lat:54.6181, lon:-5.8725 },
+    { iata:"SOU", city:"Southampton",         name:"Southampton Airport",              country:"UK",             flag:"🇬🇧", lat:50.9503, lon:-1.3568 },
+    { iata:"EXT", city:"Exeter",              name:"Exeter Airport",                   country:"UK",             flag:"🇬🇧", lat:50.7344, lon:-3.4139 },
+    // Ireland
+    { iata:"DUB", city:"Dublin",              name:"Dublin Airport",                   country:"Ireland",        flag:"🇮🇪", lat:53.4213, lon:-6.2700 },
+    { iata:"ORK", city:"Cork",                name:"Cork Airport",                     country:"Ireland",        flag:"🇮🇪", lat:51.8413, lon:-8.4912 },
+    { iata:"SNN", city:"Shannon",             name:"Shannon Airport",                  country:"Ireland",        flag:"🇮🇪", lat:52.7020, lon:-8.9248 },
+    // Portugal
+    { iata:"OPO", city:"Porto",               name:"Francisco Sá Carneiro",            country:"Portugal",       flag:"🇵🇹", lat:41.2367, lon:-8.6710 },
+    { iata:"LIS", city:"Lisbon",              name:"Humberto Delgado Airport",         country:"Portugal",       flag:"🇵🇹", lat:38.7813, lon:-9.1359 },
+    { iata:"FAO", city:"Faro",                name:"Faro Airport",                     country:"Portugal",       flag:"🇵🇹", lat:37.0145, lon:-7.9659 },
+    { iata:"PDL", city:"Azores",              name:"Ponta Delgada Airport",            country:"Portugal",       flag:"🇵🇹", lat:37.7412, lon:-25.6979},
+    { iata:"FNC", city:"Madeira",             name:"Madeira Airport (Funchal)",        country:"Portugal",       flag:"🇵🇹", lat:32.6979, lon:-16.7781},
+    // Spain — mainland
+    { iata:"MAD", city:"Madrid",              name:"Barajas Airport",                  country:"Spain",          flag:"🇪🇸", lat:40.4719, lon:-3.5626 },
+    { iata:"BCN", city:"Barcelona",           name:"El Prat Airport",                  country:"Spain",          flag:"🇪🇸", lat:41.2971, lon: 2.0785 },
+    { iata:"AGP", city:"Málaga",              name:"Costa del Sol Airport",            country:"Spain",          flag:"🇪🇸", lat:36.6749, lon:-4.4991 },
+    { iata:"VLC", city:"Valencia",            name:"Valencia Airport",                 country:"Spain",          flag:"🇪🇸", lat:39.4893, lon:-0.4816 },
+    { iata:"SVQ", city:"Seville",             name:"Seville Airport",                  country:"Spain",          flag:"🇪🇸", lat:37.4180, lon:-5.8931 },
+    { iata:"BIO", city:"Bilbao",              name:"Bilbao Airport",                   country:"Spain",          flag:"🇪🇸", lat:43.3011, lon:-2.9106 },
+    { iata:"SDR", city:"Santander",           name:"Seve Ballesteros Airport",         country:"Spain",          flag:"🇪🇸", lat:43.4271, lon:-3.8200 },
+    { iata:"OVD", city:"Asturias",            name:"Asturias Airport",                 country:"Spain",          flag:"🇪🇸", lat:43.5636, lon:-6.0346 },
+    { iata:"SCQ", city:"Santiago de Compostela", name:"Santiago de Compostela",        country:"Spain",          flag:"🇪🇸", lat:42.8964, lon:-8.4151 },
+    { iata:"VGO", city:"Vigo",                name:"Vigo–Peinador Airport",            country:"Spain",          flag:"🇪🇸", lat:42.2318, lon:-8.6268 },
+    { iata:"GRO", city:"Girona",              name:"Girona–Costa Brava Airport",       country:"Spain",          flag:"🇪🇸", lat:41.9011, lon: 2.7603 },
+    { iata:"ZAZ", city:"Zaragoza",            name:"Zaragoza Airport",                 country:"Spain",          flag:"🇪🇸", lat:41.6663, lon:-1.0415 },
+    { iata:"XRY", city:"Jerez",               name:"Jerez Airport",                    country:"Spain",          flag:"🇪🇸", lat:36.7446, lon:-6.0601 },
+    { iata:"GRX", city:"Granada",             name:"Federico García Lorca Airport",    country:"Spain",          flag:"🇪🇸", lat:37.1887, lon:-3.7774 },
+    { iata:"ALC", city:"Alicante",            name:"Alicante Airport",                 country:"Spain",          flag:"🇪🇸", lat:38.2822, lon:-0.5582 },
+    // Spain — islands
+    { iata:"PMI", city:"Palma de Mallorca",   name:"Palma Airport",                    country:"Spain",          flag:"🇪🇸", lat:39.5517, lon: 2.7388 },
+    { iata:"IBZ", city:"Ibiza",               name:"Ibiza Airport",                    country:"Spain",          flag:"🇪🇸", lat:38.8729, lon: 1.3731 },
+    { iata:"MAH", city:"Menorca",             name:"Menorca Airport",                  country:"Spain",          flag:"🇪🇸", lat:39.8626, lon: 4.2186 },
+    { iata:"LPA", city:"Gran Canaria",        name:"Gran Canaria Airport",             country:"Spain",          flag:"🇪🇸", lat:27.9319, lon:-15.3866},
+    { iata:"TFS", city:"Tenerife South",      name:"Tenerife South Airport",           country:"Spain",          flag:"🇪🇸", lat:28.0445, lon:-16.5725},
+    { iata:"TFN", city:"Tenerife North",      name:"Tenerife North Airport",           country:"Spain",          flag:"🇪🇸", lat:28.4827, lon:-16.3414},
+    { iata:"ACE", city:"Lanzarote",           name:"Lanzarote Airport",                country:"Spain",          flag:"🇪🇸", lat:28.9455, lon:-13.6052},
+    { iata:"FUE", city:"Fuerteventura",       name:"Fuerteventura Airport",            country:"Spain",          flag:"🇪🇸", lat:28.4527, lon:-13.8638},
+    // Italy
+    { iata:"FCO", city:"Rome",                name:"Rome Fiumicino",                   country:"Italy",          flag:"🇮🇹", lat:41.8003, lon:12.2389 },
+    { iata:"CIA", city:"Rome Ciampino",       name:"Rome Ciampino Airport",            country:"Italy",          flag:"🇮🇹", lat:41.7994, lon:12.5949 },
+    { iata:"MXP", city:"Milan",               name:"Milan Malpensa",                   country:"Italy",          flag:"🇮🇹", lat:45.6306, lon: 8.7281 },
+    { iata:"LIN", city:"Milan Linate",        name:"Milan Linate Airport",             country:"Italy",          flag:"🇮🇹", lat:45.4453, lon: 9.2768 },
+    { iata:"BGY", city:"Milan Bergamo",       name:"Bergamo Orio al Serio",            country:"Italy",          flag:"🇮🇹", lat:45.6739, lon: 9.7042 },
+    { iata:"VCE", city:"Venice",              name:"Venice Marco Polo",                country:"Italy",          flag:"🇮🇹", lat:45.5053, lon:12.3519 },
+    { iata:"TSF", city:"Venice Treviso",      name:"Treviso Airport",                  country:"Italy",          flag:"🇮🇹", lat:45.6484, lon:12.1942 },
+    { iata:"BLQ", city:"Bologna",             name:"Bologna Guglielmo Marconi",        country:"Italy",          flag:"🇮🇹", lat:44.5354, lon:11.2887 },
+    { iata:"VRN", city:"Verona",              name:"Verona Villafranca Airport",       country:"Italy",          flag:"🇮🇹", lat:45.3957, lon:10.8885 },
+    { iata:"PSA", city:"Pisa",                name:"Pisa International Airport",       country:"Italy",          flag:"🇮🇹", lat:43.6839, lon:10.3927 },
+    { iata:"NAP", city:"Naples",              name:"Naples International Airport",     country:"Italy",          flag:"🇮🇹", lat:40.8860, lon:14.2908 },
+    { iata:"BRI", city:"Bari",                name:"Bari Karol Wojtyla Airport",       country:"Italy",          flag:"🇮🇹", lat:41.1389, lon:16.7608 },
+    { iata:"CTA", city:"Catania",             name:"Catania Fontanarossa",             country:"Italy",          flag:"🇮🇹", lat:37.4668, lon:15.0664 },
+    { iata:"PMO", city:"Palermo",             name:"Palermo Falcone-Borsellino",       country:"Italy",          flag:"🇮🇹", lat:38.1796, lon:13.0910 },
+    // Scandinavia — Norway
+    { iata:"OSL", city:"Oslo",                name:"Oslo Gardermoen",                  country:"Norway",         flag:"🇳🇴", lat:60.1939, lon:11.1004 },
+    { iata:"BGO", city:"Bergen",              name:"Bergen Flesland Airport",          country:"Norway",         flag:"🇳🇴", lat:60.2934, lon: 5.2181 },
+    { iata:"SVG", city:"Stavanger",           name:"Stavanger Sola Airport",           country:"Norway",         flag:"🇳🇴", lat:58.8768, lon: 5.6378 },
+    { iata:"TRD", city:"Trondheim",           name:"Trondheim Værnes Airport",         country:"Norway",         flag:"🇳🇴", lat:63.4578, lon:10.9239 },
+    // Scandinavia — Sweden
+    { iata:"ARN", city:"Stockholm",           name:"Stockholm Arlanda",                country:"Sweden",         flag:"🇸🇪", lat:59.6519, lon:17.9186 },
+    { iata:"GOT", city:"Gothenburg",          name:"Gothenburg Landvetter",            country:"Sweden",         flag:"🇸🇪", lat:57.6628, lon:12.2798 },
+    { iata:"MMX", city:"Malmö",               name:"Malmö Airport",                    country:"Sweden",         flag:"🇸🇪", lat:55.5363, lon:13.3762 },
+    // Scandinavia — Denmark
+    { iata:"CPH", city:"Copenhagen",          name:"Copenhagen Kastrup",               country:"Denmark",        flag:"🇩🇰", lat:55.6180, lon:12.6561 },
+    { iata:"BLL", city:"Billund",             name:"Billund Airport",                  country:"Denmark",        flag:"🇩🇰", lat:55.7403, lon: 9.1519 },
+    { iata:"AAL", city:"Aalborg",             name:"Aalborg Airport",                  country:"Denmark",        flag:"🇩🇰", lat:57.0926, lon: 9.8492 },
+    // Finland
+    { iata:"HEL", city:"Helsinki",            name:"Helsinki-Vantaa Airport",          country:"Finland",        flag:"🇫🇮", lat:60.3172, lon:24.9633 },
+    { iata:"TMP", city:"Tampere",             name:"Tampere-Pirkkala Airport",         country:"Finland",        flag:"🇫🇮", lat:61.4141, lon:23.6044 },
+    { iata:"OUL", city:"Oulu",                name:"Oulu Airport",                     country:"Finland",        flag:"🇫🇮", lat:64.9301, lon:25.3546 },
+    // Baltics
+    { iata:"RIX", city:"Riga",                name:"Riga International Airport",       country:"Latvia",         flag:"🇱🇻", lat:56.9236, lon:23.9711 },
+    { iata:"VNO", city:"Vilnius",             name:"Vilnius Airport",                  country:"Lithuania",      flag:"🇱🇹", lat:54.6341, lon:25.2858 },
+    { iata:"TLL", city:"Tallinn",             name:"Lennart Meri Tallinn Airport",     country:"Estonia",        flag:"🇪🇪", lat:59.4133, lon:24.8328 },
+    // Switzerland
+    { iata:"ZRH", city:"Zurich",              name:"Zurich Airport",                   country:"Switzerland",    flag:"🇨🇭", lat:47.4647, lon: 8.5492 },
+    { iata:"GVA", city:"Geneva",              name:"Geneva Airport",                   country:"Switzerland",    flag:"🇨🇭", lat:46.2381, lon: 6.1089 },
+    { iata:"BSL", city:"Basel",               name:"EuroAirport Basel–Mulhouse",       country:"Switzerland",    flag:"🇨🇭", lat:47.5896, lon: 7.5299 },
+    // Austria
+    { iata:"VIE", city:"Vienna",              name:"Vienna International Airport",     country:"Austria",        flag:"🇦🇹", lat:48.1103, lon:16.5697 },
+    { iata:"SZG", city:"Salzburg",            name:"Salzburg Airport",                 country:"Austria",        flag:"🇦🇹", lat:47.7933, lon:13.0043 },
+    { iata:"INN", city:"Innsbruck",           name:"Innsbruck Airport",                country:"Austria",        flag:"🇦🇹", lat:47.2602, lon:11.3440 },
+    { iata:"GRZ", city:"Graz",                name:"Graz Airport",                     country:"Austria",        flag:"🇦🇹", lat:46.9911, lon:15.4396 },
+    { iata:"LNZ", city:"Linz",                name:"Linz Airport",                     country:"Austria",        flag:"🇦🇹", lat:48.2332, lon:14.1875 },
+    // Czech Republic / Slovakia
+    { iata:"PRG", city:"Prague",              name:"Václav Havel Airport",             country:"Czechia",        flag:"🇨🇿", lat:50.1008, lon:14.2600 },
+    { iata:"BRQ", city:"Brno",                name:"Brno–Tuřany Airport",              country:"Czechia",        flag:"🇨🇿", lat:49.1513, lon:16.6944 },
+    { iata:"BTS", city:"Bratislava",          name:"M.R. Štefánik Airport",            country:"Slovakia",       flag:"🇸🇰", lat:48.1702, lon:17.2127 },
+    // Poland
+    { iata:"WAW", city:"Warsaw",              name:"Warsaw Chopin Airport",            country:"Poland",         flag:"🇵🇱", lat:52.1657, lon:20.9671 },
+    { iata:"KRK", city:"Krakow",              name:"Kraków John Paul II Airport",      country:"Poland",         flag:"🇵🇱", lat:50.0778, lon:19.7848 },
+    { iata:"GDN", city:"Gdansk",              name:"Gdańsk Lech Wałęsa Airport",       country:"Poland",         flag:"🇵🇱", lat:54.3776, lon:18.4662 },
+    { iata:"WRO", city:"Wroclaw",             name:"Copernicus Airport Wrocław",       country:"Poland",         flag:"🇵🇱", lat:51.1027, lon:16.8858 },
+    { iata:"POZ", city:"Poznan",              name:"Poznań–Ławica Airport",            country:"Poland",         flag:"🇵🇱", lat:52.4210, lon:16.8263 },
+    { iata:"KTW", city:"Katowice",            name:"Katowice Airport",                 country:"Poland",         flag:"🇵🇱", lat:50.4743, lon:19.0800 },
+    // Hungary / Romania / Bulgaria
+    { iata:"BUD", city:"Budapest",            name:"Budapest Liszt Ferenc Airport",    country:"Hungary",        flag:"🇭🇺", lat:47.4298, lon:19.2611 },
+    { iata:"OTP", city:"Bucharest",           name:"Henri Coandă Airport",             country:"Romania",        flag:"🇷🇴", lat:44.5711, lon:26.0850 },
+    { iata:"CLJ", city:"Cluj-Napoca",         name:"Cluj International Airport",       country:"Romania",        flag:"🇷🇴", lat:46.7852, lon:23.6862 },
+    { iata:"SOF", city:"Sofia",               name:"Sofia Airport",                    country:"Bulgaria",       flag:"🇧🇬", lat:42.6967, lon:23.4114 },
+    // Western Balkans
+    { iata:"BEG", city:"Belgrade",            name:"Nikola Tesla Airport",             country:"Serbia",         flag:"🇷🇸", lat:44.8184, lon:20.3091 },
+    { iata:"LJU", city:"Ljubljana",           name:"Ljubljana Jože Pučnik Airport",   country:"Slovenia",       flag:"🇸🇮", lat:46.2237, lon:14.4576 },
+    { iata:"ZAG", city:"Zagreb",              name:"Zagreb Airport",                   country:"Croatia",        flag:"🇭🇷", lat:45.7429, lon:16.0688 },
+    { iata:"SPU", city:"Split",               name:"Split Airport",                    country:"Croatia",        flag:"🇭🇷", lat:43.5389, lon:16.2980 },
+    { iata:"DBV", city:"Dubrovnik",           name:"Dubrovnik Airport",                country:"Croatia",        flag:"🇭🇷", lat:42.5614, lon:18.2682 },
+    { iata:"TGD", city:"Podgorica",           name:"Podgorica Airport",                country:"Montenegro",     flag:"🇲🇪", lat:42.3594, lon:19.2519 },
+    { iata:"TIA", city:"Tirana",              name:"Tirana International Airport",     country:"Albania",        flag:"🇦🇱", lat:41.4147, lon:19.7206 },
+    { iata:"SKP", city:"Skopje",              name:"Skopje International Airport",     country:"N. Macedonia",   flag:"🇲🇰", lat:41.9616, lon:21.6214 },
+    { iata:"SJJ", city:"Sarajevo",            name:"Sarajevo International Airport",  country:"Bosnia",         flag:"🇧🇦", lat:43.8246, lon:18.3315 },
+    // Greece
+    { iata:"ATH", city:"Athens",              name:"Eleftherios Venizelos Airport",    country:"Greece",         flag:"🇬🇷", lat:37.9364, lon:23.9445 },
+    { iata:"SKG", city:"Thessaloniki",        name:"Makedonia Airport",                country:"Greece",         flag:"🇬🇷", lat:40.5197, lon:22.9709 },
+    { iata:"HER", city:"Heraklion",           name:"Nikos Kazantzakis Airport",        country:"Greece",         flag:"🇬🇷", lat:35.3397, lon:25.1803 },
+    { iata:"RHO", city:"Rhodes",              name:"Diagoras Airport",                 country:"Greece",         flag:"🇬🇷", lat:36.4054, lon:28.0862 },
+    { iata:"CFU", city:"Corfu",               name:"Ioannis Kapodistrias Airport",     country:"Greece",         flag:"🇬🇷", lat:39.6019, lon:19.9117 },
+    { iata:"KGS", city:"Kos",                 name:"Hippocrates Airport",              country:"Greece",         flag:"🇬🇷", lat:36.7933, lon:26.7173 },
+    { iata:"JMK", city:"Mykonos",             name:"Mykonos Airport",                  country:"Greece",         flag:"🇬🇷", lat:37.4351, lon:25.3481 },
+    { iata:"JTR", city:"Santorini",           name:"Santorini Airport",                country:"Greece",         flag:"🇬🇷", lat:36.3992, lon:25.4793 },
+    { iata:"CHQ", city:"Chania",              name:"Chania International Airport",     country:"Greece",         flag:"🇬🇷", lat:35.5317, lon:24.1497 },
+    // Cyprus / Malta
+    { iata:"LCA", city:"Larnaca",             name:"Larnaca International Airport",    country:"Cyprus",         flag:"🇨🇾", lat:34.8751, lon:33.6249 },
+    { iata:"PFO", city:"Paphos",              name:"Paphos International Airport",     country:"Cyprus",         flag:"🇨🇾", lat:34.7179, lon:32.4857 },
+    { iata:"MLA", city:"Malta",               name:"Malta International Airport",      country:"Malta",          flag:"🇲🇹", lat:35.8574, lon:14.4775 },
+    // Turkey
+    { iata:"IST", city:"Istanbul",            name:"Istanbul Airport",                 country:"Turkey",         flag:"🇹🇷", lat:41.2753, lon:28.7519 },
+    { iata:"SAW", city:"Istanbul Sabiha",     name:"Istanbul Sabiha Gökçen",           country:"Turkey",         flag:"🇹🇷", lat:40.8986, lon:29.3092 },
+    { iata:"ADB", city:"Izmir",               name:"Izmir Adnan Menderes Airport",     country:"Turkey",         flag:"🇹🇷", lat:38.2924, lon:27.1570 },
+    { iata:"AYT", city:"Antalya",             name:"Antalya Airport",                  country:"Turkey",         flag:"🇹🇷", lat:36.8987, lon:30.7992 },
+    // Iceland
+    { iata:"KEF", city:"Reykjavik",           name:"Keflavik International Airport",   country:"Iceland",        flag:"🇮🇸", lat:63.9850, lon:-22.6056},
+    // North Africa (popular destinations)
+    { iata:"CMN", city:"Casablanca",          name:"Mohammed V International",         country:"Morocco",        flag:"🇲🇦", lat:33.3675, lon:-7.5897 },
+    { iata:"RAK", city:"Marrakech",           name:"Marrakech Menara Airport",         country:"Morocco",        flag:"🇲🇦", lat:31.6069, lon:-8.0363 },
+    { iata:"AGA", city:"Agadir",              name:"Agadir Al Massira Airport",        country:"Morocco",        flag:"🇲🇦", lat:30.3250, lon:-9.4130 },
+    { iata:"TUN", city:"Tunis",               name:"Tunis-Carthage Airport",           country:"Tunisia",        flag:"🇹🇳", lat:36.8510, lon:10.2272 },
   ];
 
   // Deduplicate by iata
@@ -2634,6 +2771,7 @@ async function openCalendarFromPanel(btn) {
       if (data.outbound) {
         const o = data.outbound;
         let driveRow = "";
+        let mapsRow = "";
         if (o.geocode_error) {
           driveRow = `<div class="tg-row" style="color:#c00">⚠️ Address not found — check postcode &amp; city</div>`;
         } else if (o.drive_mins) {
@@ -2643,11 +2781,20 @@ async function openCalendarFromPanel(btn) {
           driveRow = `
             ${o.leave          ? row("🏠 Leave home",                    o.leave)          : ""}
             ${row("🚗 Drive to " + o.dep_airport_name,                   driveLabel)}
-            ${o.arrive_airport ? row("🚗 Arrive " + o.dep_airport_name,  o.arrive_airport) : ""}`;
+            ${o.arrive_airport ? row("✅ Arrive " + o.dep_airport_name,  o.arrive_airport) : ""}`;
+          if (o.home_label) {
+            const orig = encodeURIComponent(o.home_label);
+            const dest = encodeURIComponent(o.dep_airport_name + " airport");
+            mapsRow = `<div class="tg-maps-row">
+              <a href="https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving" target="_blank" rel="noopener" class="tg-map-link">🗺 Car directions</a>
+              <a href="https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=transit" target="_blank" rel="noopener" class="tg-map-link">🚂 Train / transit</a>
+            </div>`;
+          }
         }
         leftCol = `
           <div class="tg-col-title">✈ Leave &nbsp;·&nbsp; ${fmtDate(o.date || trip.depart_date)}</div>
           ${driveRow}
+          ${mapsRow}
           ${o.departure   ? row("🛫 Departure",                  o.departure)       : ""}
           ${trip.arr_time ? row("🛬 Arrive " + o.arr_airport_name, trip.arr_time)  : ""}`;
       } else {
@@ -2656,11 +2803,11 @@ async function openCalendarFromPanel(btn) {
       }
       if (data.return) {
         const r = data.return;
+        const tzTag = r.tz ? ` <span style="opacity:0.5;font-size:0.82em">${r.tz}</span>` : "";
         rightCol = `
           <div class="tg-col-title">✈ Return &nbsp;·&nbsp; ${fmtDate(r.date)}</div>
-          ${row("🏠 Leave",                    r.leave)}
-          ${row("🚗 Arrive " + r.dep_airport_name, r.arrive_airport)}
-          ${row("🛫 Departure",                r.departure)}
+          ${r.checkin ? row("🕐 At " + r.dep_airport_name + " by", r.checkin + tzTag) : ""}
+          ${row("🛫 Departure", r.departure)}
           ${trip.ret_arr_time ? row("🛬 Arrive " + r.arr_airport_name, trip.ret_arr_time) : ""}`;
       }
       const calData = JSON.stringify({
