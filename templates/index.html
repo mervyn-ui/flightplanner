@@ -708,17 +708,17 @@
       position: absolute; border-radius: 6px; cursor: pointer;
       overflow: hidden; transition: filter 0.12s, transform 0.1s;
       box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      display: flex; align-items: center; padding: 0 5px; gap: 3px;
+      display: flex; flex-direction: column; justify-content: center;
+      align-items: flex-start; padding: 2px 5px;
     }
     .tl-block:hover { filter: brightness(1.15); transform: scaleY(1.06); z-index: 20; }
-    .tl-block-dest {
-      font-size: 1.05rem; font-weight: 900; color: rgba(255,255,255,0.95);
-      line-height: 1; letter-spacing: -0.03em; flex-shrink: 0;
-      white-space: nowrap;
-    }
     .tl-block-price {
-      font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.82);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 0.88rem; font-weight: 900; color: rgba(255,255,255,0.97);
+      line-height: 1.1; white-space: nowrap;
+    }
+    .tl-block-orig {
+      font-size: 0.58rem; font-weight: 700; color: rgba(255,255,255,0.78);
+      line-height: 1.1; white-space: nowrap;
     }
     .tl-legend {
       display: flex; align-items: center; gap: 0.4rem;
@@ -1872,22 +1872,18 @@ async function openCalendarFromPanel(btn) {
   }
 
   function _renderTimeline(trips, startStr, endStr) {
-    const DAY    = 18;   // px per day
-    const BH     = 30;   // block height px
-    const BGAP   = 4;    // gap between rows
-    const HDR    = 36;   // month header height px
-    const LLABEL = 54;   // left column width for airport labels
-    const SEC_HDR = 26;  // swim-lane header height
-    const SEC_GAP = 10;  // gap between swim lanes
+    const DAY     = 18;
+    const BH      = 34;
+    const BGAP    = 5;
+    const HDR     = 36;
+    const LLABEL  = 54;
+    const SEC_HDR = 28;
+    const SEC_GAP = 14;
 
     const t0 = new Date(startStr + "T00:00:00");
     const t1 = new Date(endStr   + "T00:00:00");
     const totalDays = Math.round((t1 - t0) / 86400000);
 
-    const prices = trips.map(t => t.price);
-    const minP = Math.min(...prices), maxP = Math.max(...prices);
-
-    // Order origins: AMS first, then EIN, NRN, BRU, then any others
     const ORIGIN_ORDER = ["AMS","EIN","NRN","BRU"];
     const presentOrigins = [...new Set(trips.map(t => t.origin))];
     const uniqueOrigins = [
@@ -1895,10 +1891,26 @@ async function openCalendarFromPanel(btn) {
       ...presentOrigins.filter(o => !ORIGIN_ORDER.includes(o))
     ];
 
-    const byOrigin = {};
-    trips.forEach(t => { (byOrigin[t.origin] = byOrigin[t.origin] || []).push(t); });
+    // Filter: top 4 cheapest per month per origin
+    const filteredTrips = [];
+    uniqueOrigins.forEach(origin => {
+      const byMonth = {};
+      trips.filter(t => t.origin === origin).forEach(t => {
+        const m = t.dep_date.slice(0, 7);
+        (byMonth[m] = byMonth[m] || []).push(t);
+      });
+      Object.values(byMonth).forEach(monthTrips => {
+        const top4 = [...monthTrips].sort((a, b) => a.price - b.price).slice(0, 4);
+        filteredTrips.push(...top4);
+      });
+    });
 
-    // Build placed[] with swim lanes
+    const prices = filteredTrips.map(t => t.price);
+    const minP = Math.min(...prices), maxP = Math.max(...prices);
+
+    const byOrigin = {};
+    filteredTrips.forEach(t => { (byOrigin[t.origin] = byOrigin[t.origin] || []).push(t); });
+
     const placed = [];
     let currentY = HDR;
     let sectionsHTML = "", linesHTML = "";
@@ -1907,24 +1919,20 @@ async function openCalendarFromPanel(btn) {
       const group = byOrigin[origin] || [];
       if (!group.length) return;
 
-      // Section label (in the left column, vertically centered in header row)
       sectionsHTML += `<div class="tl-section-hdr" style="top:${currentY}px;height:${SEC_HDR}px">${origin}</div>`;
-      // Horizontal separator line across content area
-      linesHTML += `<div class="tl-section-line" style="left:${LLABEL}px;top:${currentY}px;width:${totalDays*DAY}px"></div>`;
+      linesHTML    += `<div class="tl-section-line" style="left:${LLABEL}px;top:${currentY}px;width:${totalDays*DAY}px"></div>`;
       currentY += SEC_HDR;
 
-      // Sort by dep_date asc, price asc
       const sorted = [...group].sort((a, b) =>
         a.dep_date < b.dep_date ? -1 : a.dep_date > b.dep_date ? 1 : a.price - b.price
       );
 
-      // Greedy row packing (free-floating, no week snapping)
       const rowFree = [];
       const laneTop = currentY;
       sorted.forEach(trip => {
         const depDay = Math.round((new Date(trip.dep_date + "T00:00:00") - t0) / 86400000);
         const x = LLABEL + depDay * DAY;
-        const w = Math.max(trip.duration * DAY - 2, 14);
+        const w = Math.max(trip.duration * DAY - 2, 16);
         let row = 0;
         while (rowFree[row] !== undefined && rowFree[row] > x) row++;
         rowFree[row] = x + w + 3;
@@ -1937,7 +1945,6 @@ async function openCalendarFromPanel(btn) {
     const totalH = currentY + 4;
     const W = LLABEL + totalDays * DAY;
 
-    // Month labels + day tick lines
     const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     let headerHTML = "", ticksHTML = "";
     let prevM = -1;
@@ -1952,18 +1959,16 @@ async function openCalendarFromPanel(btn) {
       }
     }
 
-    // Blocks
     const blocksHTML = placed.map((trip, idx) => {
       const bg = _tlPriceColor(trip.price, minP, maxP);
-      // Show dest code at large size; price only if block is wide enough
-      const priceSpan = trip.w >= 42 ? `<span class="tl-block-price">€${trip.price}</span>` : "";
       return `<div class="tl-block"
         style="left:${trip.x}px;top:${trip.y}px;width:${trip.w}px;height:${BH}px;background:${bg}"
         onmouseenter="tlHover(event,${idx})"
         onmousemove="tlHoverMove(event)"
         onmouseleave="tlHoverOut()"
         onclick="tlClick(${idx})">
-        <span class="tl-block-dest">${trip.destination}</span>${priceSpan}
+        <div class="tl-block-price">€${trip.price}</div>
+        <div class="tl-block-orig">${trip.origin}</div>
       </div>`;
     }).join("");
 
@@ -1979,7 +1984,7 @@ async function openCalendarFromPanel(btn) {
         <div class="tl-legend">
           <div class="tl-legend-bar"></div>
           <span>cheap → expensive</span>
-          <span style="margin-left:1rem;opacity:0.55">block width = stay duration · click for details</span>
+          <span style="margin-left:1rem;opacity:0.55">top 4 cheapest per month per airport · block width = stay duration · click for details</span>
         </div>
         <div id="tl-detail-panel"></div>
       </div>`;
