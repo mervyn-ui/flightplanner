@@ -912,6 +912,13 @@
     .ap-name { font-size: 0.75rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ap-check { font-size: 1rem; color: #4f4300; width: 20px; text-align: center; font-weight: 700; }
     .ap-no-results { padding: 0.85rem 1rem; color: #999; font-size: 0.88rem; }
+    .ap-section-label {
+      padding: 5px 10px 4px; font-size: 0.63rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: #4f4300; background: #fdf8e8; border-bottom: 1px solid #e8dca0;
+      position: sticky; top: 0; z-index: 1; user-select: none;
+    }
+    .ap-section-label.dim { color: #999; background: #f5f5f5; border-color: #e5e5e5; }
 
     @media (max-width: 680px) {
       /* Search card */
@@ -2576,6 +2583,53 @@ async function openCalendarFromPanel(btn) {
   // Deduplicate by iata
   const AP_LIST = Object.values(Object.fromEntries(AP_AIRPORTS.map(a => [a.iata, a])));
 
+  // Direct routes: departure → known direct destinations
+  const DIRECT_TO = {
+    "AMS": ["OPO","LIS","FAO","MAD","BCN","AGP","VLC","SVQ","PMI","IBZ","ALC","MAH","GRO","REU","TFS","TFN","LPA","ACE","FUE","SPC","FCO","CIA","MXP","BGY","VCE","BLQ","VRN","PSA","FLR","NAP","BRI","CTA","PMO","CAG","OLB","ATH","SKG","HER","RHO","CFU","KGS","JMK","JTR","CHQ","ZTH","LCA","PFO","MLA","IST","SAW","AYT","ADB","DUB","ORK","SNN","LHR","LGW","STN","LTN","MAN","BHX","EDI","GLA","BRS","NCL","LPL","LBA","BFS","EMA","CWL","PIK","CDG","ORY","NCE","MRS","LYS","BOD","TLS","NTE","BVA","BIQ","AJA","BIA","ZRH","GVA","BSL","VIE","SZG","PRG","BTS","WAW","KRK","GDN","WRO","POZ","KTW","BUD","OTP","CLJ","TSR","SOF","VAR","BOJ","BEG","ZAG","SPU","DBV","LJU","TIA","SKP","TLL","RIX","VNO","CPH","OSL","ARN","GOT","HEL","CMN","RAK","AGA","TUN","KEF"],
+    "EIN": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","REU","TFS","LPA","ACE","FUE","FCO","BGY","TSF","NAP","CTA","PMO","CAG","OLB","ATH","SKG","HER","RHO","CFU","KGS","ZTH","LCA","PFO","IST","SAW","AYT","DUB","ORK","SNN","LHR","LGW","STN","MAN","BHX","EDI","GLA","BRS","NCL","LPL","PIK","BFS","CDG","BVA","ZRH","PRG","VIE","BUD","WAW","KRK","GDN","WRO","KTW","OTP","CLJ","SOF","BEG","ZAG","TIA","SKP","TLL","RIX","VNO","CPH","OSL","ARN","CMN","RAK","TUN"],
+    "NRN": ["OPO","LIS","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","TFS","LPA","FCO","BGY","NAP","CTA","ATH","SKG","HER","RHO","LCA","IST","SAW","AYT","DUB","STN","LGW","MAN","EDI","BRS","CDG","PRG","VIE","BUD","WAW","KRK","GDN","KTW","OTP","SOF","SKP","ZAG","BEG","TLL","RIX","TUN","CMN"],
+    "BRU": ["OPO","LIS","FAO","MAD","BCN","AGP","VLC","SVQ","PMI","IBZ","ALC","TFS","LPA","ACE","FUE","FCO","MXP","VCE","BGY","NAP","CTA","CAG","ATH","SKG","HER","RHO","CFU","KGS","LCA","PFO","IST","SAW","AYT","DUB","LHR","LGW","STN","MAN","EDI","BRS","CDG","ORY","LYS","NCE","ZRH","GVA","PRG","VIE","BUD","WAW","KRK","GDN","OTP","SOF","BEG","ZAG","TLL","RIX","VNO","CPH","OSL","ARN","HEL","MLA","CMN","RAK","TUN"],
+    "CRL": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","REU","TFS","LPA","ACE","FUE","FCO","BGY","CIA","NAP","CTA","CAG","OLB","ATH","SKG","HER","RHO","CFU","KGS","ZTH","LCA","IST","SAW","AYT","DUB","ORK","SNN","STN","LGW","MAN","BHX","EDI","GLA","BRS","NCL","LPL","PIK","CDG","ZRH","PRG","VIE","BUD","WAW","KRK","GDN","WRO","KTW","OTP","CLJ","SOF","SKP","ZAG","TIA","BEG","TLL","RIX","VNO","CPH","OSL","CMN","RAK","TUN"],
+    "LHR": ["OPO","LIS","FAO","MAD","BCN","AGP","VLC","SVQ","PMI","TFS","LPA","FCO","MXP","VCE","NAP","ATH","SKG","LCA","IST","AYT","DUB","CDG","ZRH","GVA","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","BEG","CMN"],
+    "LGW": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","TFS","LPA","FCO","MXP","BGY","NAP","CTA","ATH","SKG","HER","RHO","CFU","LCA","IST","SAW","AYT","DUB","CDG","ZRH","VIE","PRG","BUD","CPH","OSL","ARN","SOF","OTP","VAR","BOJ","CMN","RAK"],
+    "STN": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","REU","TFS","LPA","ACE","FCO","BGY","CIA","NAP","CTA","ATH","SKG","HER","RHO","CFU","KGS","ZTH","LCA","IST","SAW","AYT","DUB","ORK","SNN","CDG","BVA","PRG","VIE","BUD","WAW","KRK","GDN","WRO","KTW","OTP","CLJ","SOF","SKP","ZAG","TIA","BEG","SJJ","TLL","RIX","VNO","CPH","OSL","ARN","CMN","RAK","TUN"],
+    "MAN": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","TFS","LPA","FCO","BGY","NAP","CTA","ATH","SKG","HER","RHO","LCA","IST","AYT","DUB","ORK","CDG","ZRH","VIE","PRG","BUD","WAW","KRK","CPH","OSL","ARN","SOF","OTP","CMN","RAK"],
+    "CDG": ["OPO","LIS","FAO","MAD","BCN","AGP","VLC","SVQ","PMI","IBZ","ALC","TFS","LPA","FCO","MXP","VCE","BLQ","PSA","NAP","CTA","ATH","SKG","HER","RHO","LCA","IST","AYT","DUB","LHR","ZRH","GVA","VIE","BUD","WAW","OTP","SOF","BEG","CPH","OSL","ARN","HEL","PRG","MLA","CMN","RAK","AGA","TUN"],
+    "ORY": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","TFS","LPA","FCO","MXP","NAP","ATH","IST","DUB","ZRH","VIE","CPH","OSL","CMN","RAK"],
+    "BVA": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","REU","TFS","LPA","FCO","BGY","CIA","NAP","CTA","ATH","SKG","HER","RHO","CFU","KGS","LCA","IST","SAW","DUB","ORK","SNN","PRG","VIE","BUD","WAW","KRK","GDN","WRO","KTW","OTP","SOF","SKP","ZAG","TIA","BEG","TLL","RIX","VNO","CMN","RAK","TUN"],
+    "FRA": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","TFS","LPA","FCO","MXP","VCE","NAP","ATH","SKG","LCA","IST","AYT","DUB","LHR","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","BEG","CMN","TUN"],
+    "MUC": ["OPO","LIS","MAD","BCN","PMI","TFS","FCO","MXP","VCE","NAP","ATH","SKG","LCA","IST","DUB","LHR","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP"],
+    "DUS": ["OPO","LIS","MAD","BCN","AGP","PMI","TFS","LPA","FCO","MXP","NAP","ATH","SKG","LCA","IST","AYT","DUB","LHR","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","PRG","SOF","OTP","CMN"],
+    "BER": ["OPO","LIS","MAD","BCN","AGP","PMI","TFS","LPA","FCO","BGY","NAP","ATH","SKG","LCA","IST","DUB","LHR","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","PRG","SOF","OTP","TLL","RIX","CMN"],
+    "HAM": ["OPO","LIS","MAD","BCN","PMI","TFS","LPA","FCO","NAP","ATH","LCA","IST","DUB","LHR","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","PRG"],
+    "ZRH": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","TFS","LPA","FCO","MXP","VCE","NAP","ATH","SKG","LCA","IST","DUB","LHR","CDG","FRA","MUC","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","CMN"],
+    "GVA": ["OPO","LIS","MAD","BCN","AGP","PMI","TFS","FCO","MXP","NAP","ATH","IST","DUB","LHR","CDG","FRA","VIE","CPH","OSL","ARN","PRG","CMN"],
+    "VIE": ["OPO","LIS","MAD","BCN","AGP","PMI","IBZ","TFS","LPA","FCO","MXP","VCE","NAP","CTA","ATH","SKG","HER","RHO","LCA","IST","DUB","LHR","LGW","STN","CDG","FRA","MUC","ZRH","BUD","WAW","KRK","CPH","OSL","ARN","PRG","SOF","OTP","BEG","TLL","RIX","CMN","TUN"],
+    "PRG": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","TFS","LPA","FCO","BGY","NAP","CTA","ATH","SKG","HER","RHO","LCA","IST","SAW","AYT","DUB","LHR","LGW","STN","MAN","EDI","BRS","CDG","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","SOF","OTP","CMN","RAK"],
+    "BUD": ["OPO","LIS","MAD","BCN","AGP","PMI","IBZ","TFS","LPA","FCO","BGY","NAP","ATH","SKG","HER","LCA","IST","SAW","AYT","DUB","LHR","LGW","STN","MAN","EDI","CDG","FRA","ZRH","VIE","WAW","KRK","CPH","OSL","ARN","PRG","SOF","OTP","BEG","TLL","RIX","CMN"],
+    "WAW": ["OPO","LIS","MAD","BCN","PMI","TFS","FCO","BGY","NAP","ATH","LCA","IST","DUB","LHR","STN","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","CPH","OSL","ARN","PRG","SOF","OTP","TLL","RIX"],
+    "CPH": ["OPO","LIS","MAD","BCN","AGP","PMI","TFS","LPA","FCO","MXP","NAP","ATH","SKG","HER","IST","DUB","LHR","LGW","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","PRG","SOF","OTP","ARN","OSL","HEL"],
+    "OSL": ["OPO","LIS","MAD","BCN","PMI","TFS","LPA","FCO","MXP","ATH","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","ZRH","VIE","PRG","CPH","ARN","HEL"],
+    "ARN": ["OPO","LIS","MAD","BCN","PMI","TFS","LPA","FCO","MXP","ATH","IST","DUB","LHR","LGW","MAN","CDG","FRA","MUC","ZRH","VIE","PRG","CPH","OSL","HEL"],
+    "HEL": ["OPO","LIS","MAD","BCN","PMI","TFS","FCO","MXP","ATH","IST","DUB","LHR","CDG","FRA","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","PRG","SOF","OTP"],
+    "DUB": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","TFS","LPA","FCO","BGY","NAP","CTA","ATH","SKG","HER","RHO","CFU","LCA","IST","AYT","LHR","LGW","STN","MAN","BHX","EDI","GLA","BRS","EMA","CDG","ORY","FRA","ZRH","VIE","PRG","BUD","WAW","KRK","CPH","OSL","ARN","SOF","CMN","RAK"],
+    "BCN": ["OPO","LIS","FCO","MXP","VCE","NAP","ATH","SKG","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG"],
+    "MAD": ["OPO","LIS","FCO","MXP","NAP","ATH","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP"],
+    "FCO": ["OPO","LIS","MAD","BCN","AGP","PMI","ATH","SKG","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","MUC","ZRH","GVA","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","CMN"],
+    "MXP": ["OPO","LIS","MAD","BCN","ATH","SKG","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","CMN"],
+    "BGY": ["OPO","LIS","FAO","MAD","BCN","AGP","PMI","IBZ","ALC","GRO","REU","TFS","LPA","ATH","SKG","HER","RHO","CFU","KGS","LCA","IST","SAW","AYT","DUB","ORK","STN","LGW","MAN","BHX","EDI","GLA","BRS","LPL","CDG","BVA","PRG","VIE","BUD","WAW","KRK","GDN","WRO","KTW","OTP","CLJ","SOF","SKP","ZAG","TIA","BEG","TLL","RIX","VNO","CMN","RAK","TUN"],
+    "ATH": ["OPO","LIS","MAD","BCN","FCO","MXP","IST","DUB","LHR","LGW","STN","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","BEG","CMN"],
+    "IST": ["OPO","LIS","MAD","BCN","FCO","MXP","ATH","DUB","LHR","LGW","MAN","CDG","FRA","MUC","ZRH","VIE","BUD","WAW","CPH","OSL","ARN","HEL","PRG","SOF","OTP","BEG"],
+    "OPO": ["AMS","EIN","NRN","BRU","CRL","BVA","LHR","LGW","STN","LTN","MAN","BHX","BRS","EDI","GLA","NCL","LPL","LBA","EMA","CWL","PIK","DUB","ORK","SNN","CDG","ORY","LYS","BOD","TLS","NTE","FRA","MUC","BER","DUS","CGN","HAM","STR","HHN","DTM","LEJ","ZRH","GVA","BSL","VIE","SZG","PRG","BTS","WAW","KRK","GDN","WRO","KTW","BUD","OTP","SOF","BEG","ZAG","TLL","RIX","VNO","CPH","OSL","ARN","GOT","HEL","BCN","MAD","FCO","MXP","ATH"],
+    "LIS": ["AMS","EIN","BRU","CRL","BVA","LHR","LGW","STN","MAN","BHX","BRS","EDI","DUB","CDG","ORY","FRA","MUC","DUS","ZRH","GVA","BCN","MAD","FCO","MXP","ATH","IST","CPH","OSL","ARN","HEL","PRG","VIE","BUD","WAW"],
+    "SCQ": ["AMS","BRU","CDG","FRA","MUC","LHR","LGW","STN","MAN","DUB","MAD","BCN","LIS","VIE","ZRH","GVA","FCO","MXP","EDI","CPH"],
+    "VGO": ["MAD","BCN","DUB","STN","LHR","LGW","ZRH","GVA","FRA","MUC","LIS","CDG","ORY"],
+    "PMI": ["AMS","EIN","NRN","BRU","CRL","BVA","LHR","LGW","STN","MAN","BHX","EDI","GLA","BRS","EMA","DUB","CDG","ORY","FRA","MUC","BER","DUS","HAM","ZRH","GVA","PRG","VIE","BUD","WAW","GDN","WRO","CPH","OSL","ARN"],
+    "TFS": ["AMS","EIN","BRU","CRL","BVA","LHR","LGW","STN","MAN","BHX","EDI","BRS","EMA","DUB","CDG","FRA","MUC","DUS","ZRH","CPH","OSL","ARN"],
+    "LPA": ["AMS","EIN","BRU","CRL","LHR","LGW","STN","MAN","DUB","CDG","FRA","MUC","DUS","ZRH","CPH","OSL","ARN"],
+    "ATH": ["AMS","EIN","NRN","BRU","CRL","LHR","LGW","STN","MAN","BHX","EDI","BRS","DUB","CDG","FRA","MUC","BER","DUS","ZRH","GVA","BCN","MAD","FCO","MXP","CPH","OSL","ARN","HEL","PRG","VIE","BUD","WAW","OTP","SOF","IST","CMN"],
+  };
+
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371, toRad = d => d * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -2694,9 +2748,40 @@ async function openCalendarFromPanel(btn) {
     apRenderList(side, q);
   }
 
+  function _apOptHtml(side, a) {
+    const sel = apState[side].selected.includes(a.iata);
+    return `<div class="ap-option${sel ? " selected" : ""}" data-iata="${a.iata}" onclick="apSelect('${side}','${a.iata}')">
+      <span class="ap-flag">${a.flag}</span>
+      <span class="ap-iata">${a.iata}</span>
+      <span class="ap-info">
+        <div class="ap-city">${a.city}</div>
+        <div class="ap-name">${a.name} · ${a.country}</div>
+      </span>
+      <span class="ap-check">${sel ? "✓" : ""}</span>
+    </div>`;
+  }
+
   function apRenderList(side, query) {
     const list = document.getElementById(`ap-${side}-list`);
     const q    = query.trim().toLowerCase();
+
+    // When "To" is open, no search typed, and exactly one origin selected → show direct flights first
+    if (side === "to" && !q && apState.from.selected.length === 1) {
+      const origin    = apState.from.selected[0];
+      const directSet = new Set(DIRECT_TO[origin] || []);
+      if (directSet.size > 0) {
+        const direct  = AP_LIST.filter(a => directSet.has(a.iata));
+        const others  = AP_LIST.filter(a => !directSet.has(a.iata));
+        list.innerHTML =
+          `<div class="ap-section-label">✈ Direct from ${origin}</div>` +
+          direct.map(a => _apOptHtml(side, a)).join("") +
+          `<div class="ap-section-label dim">All destinations</div>` +
+          others.map(a => _apOptHtml(side, a)).join("");
+        apState[side].activeIdx = -1;
+        return;
+      }
+    }
+
     const matches = q
       ? AP_LIST.filter(a =>
           a.iata.toLowerCase().includes(q) ||
@@ -2709,18 +2794,7 @@ async function openCalendarFromPanel(btn) {
       list.innerHTML = `<div class="ap-no-results">No airports found for "${query}"</div>`;
       return;
     }
-    list.innerHTML = matches.map((a) => {
-      const sel = apState[side].selected.includes(a.iata);
-      return `<div class="ap-option${sel ? " selected" : ""}" data-iata="${a.iata}" onclick="apSelect('${side}','${a.iata}')">
-        <span class="ap-flag">${a.flag}</span>
-        <span class="ap-iata">${a.iata}</span>
-        <span class="ap-info">
-          <div class="ap-city">${a.city}</div>
-          <div class="ap-name">${a.name} · ${a.country}</div>
-        </span>
-        <span class="ap-check">${sel ? "✓" : ""}</span>
-      </div>`;
-    }).join("");
+    list.innerHTML = matches.map(a => _apOptHtml(side, a)).join("");
     apState[side].activeIdx = -1;
   }
 
@@ -2732,6 +2806,8 @@ async function openCalendarFromPanel(btn) {
     apUpdateHidden(side);
     const q = document.getElementById(`ap-${side}-search`).value;
     apRenderList(side, q);
+    // If "from" changed, refresh the "to" list so direct flights section updates
+    if (side === "from") apRenderList("to", document.getElementById("ap-to-search").value);
     document.getElementById(`ap-${side}-search`).focus();
   }
 
