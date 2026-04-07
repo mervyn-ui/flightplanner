@@ -2669,7 +2669,7 @@ async function openCalendarFromPanel(btn) {
       list.innerHTML = `<div class="ap-no-results">No airports found for "${query}"</div>`;
       return;
     }
-    list.innerHTML = matches.slice(0, 50).map((a) => {
+    list.innerHTML = matches.map((a) => {
       const sel = apState[side].selected.includes(a.iata);
       return `<div class="ap-option${sel ? " selected" : ""}" data-iata="${a.iata}" onclick="apSelect('${side}','${a.iata}')">
         <span class="ap-flag">${a.flag}</span>
