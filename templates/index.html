@@ -53,8 +53,131 @@
     .trip-btn.active { background: #4f4300; border-color: #4f4300; color: #fff; }
 
     .fields      { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: end; }
-    .dates-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.4rem; }
-    #return-row  { display: none; }
+    .dates-row   { margin-bottom: 1.4rem; }
+
+    /* ── Calendar picker ─────────────────────────────────── */
+    .cal-trigger {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: #fff; border: 1.5px solid #d8d0be; border-radius: 10px;
+      padding: 0.6rem 0.9rem; cursor: pointer; font-size: 0.92rem;
+      font-weight: 600; color: #1a1a2e; min-height: 44px; width: 100%;
+      transition: border-color 0.15s; text-align: left;
+    }
+    .cal-trigger:hover, .cal-trigger.open { border-color: #4f4300; }
+    .cal-trigger-ph { color: #aaa; font-weight: 400; }
+    .cal-trigger-sep { color: #bbb; }
+
+    .cal-popup {
+      display: none; position: fixed; z-index: 500;
+      background: #fff; border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.18);
+    }
+    .cal-popup.open { display: block; }
+
+    .cal-tabs { display: flex; border-bottom: 1px solid #eee; padding: 0 1.2rem; }
+    .cal-tab {
+      padding: 0.85rem 1rem 0.7rem; font-size: 0.72rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #999;
+      background: none; border: none; border-bottom: 3px solid transparent;
+      cursor: pointer; transition: color 0.12s;
+    }
+    .cal-tab:hover { color: #4f4300; }
+    .cal-tab.active { color: #4f4300; border-bottom-color: #4f4300; }
+
+    .cal-step-bar {
+      display: flex; padding: 0.75rem 1.2rem 0.6rem;
+      border-bottom: 1px solid #f0ead8; gap: 1rem;
+    }
+    .cal-step-item { flex: 1; cursor: pointer; }
+    .cal-step-item + .cal-step-item { border-left: 1px solid #e8dca0; padding-left: 1rem; }
+    .cal-step-title {
+      font-size: 0.63rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #aaa; display: block; margin-bottom: 2px;
+    }
+    .cal-step-date { font-size: 0.9rem; font-weight: 700; color: #1a1a2e; }
+    .cal-step-date.ph { color: #bbb; font-weight: 400; }
+    .cal-step-item.active .cal-step-title { color: #4f4300; }
+    .cal-step-item.active .cal-step-date  { color: #4f4300; }
+    .cal-flex-btn {
+      font-size: 0.65rem; font-weight: 700; color: #4f4300;
+      background: #fdf8e8; border: 1px solid #e8dca0; border-radius: 20px;
+      padding: 2px 7px; cursor: pointer; margin-left: 0.4rem;
+    }
+    .cal-flex-btn:hover { background: #f2e9d9; }
+
+    .cal-nav-row {
+      display: flex; align-items: center;
+      padding: 0.4rem 0.9rem 0; gap: 0;
+    }
+    .cal-nav-btn {
+      width: 34px; height: 34px; border: 1.5px solid #ddd; border-radius: 50%;
+      background: #fff; cursor: pointer; font-size: 1.1rem; font-weight: 700;
+      color: #555; display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s; flex-shrink: 0;
+    }
+    .cal-nav-btn:hover { border-color: #4f4300; color: #4f4300; }
+    .cal-nav-btn.disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+
+    .cal-months-wrap {
+      display: flex; padding: 0.3rem 0.9rem 1rem; gap: 0;
+    }
+    .cal-month-panel { flex: 1; min-width: 0; }
+    .cal-months-divider { width: 1px; background: #f0ead8; margin: 0 0.75rem; flex-shrink: 0; }
+
+    .cal-month-title {
+      text-align: center; font-size: 0.88rem; font-weight: 800; color: #1a1a2e;
+      padding: 0.5rem 0 0.55rem; text-transform: capitalize;
+    }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal-hdr {
+      text-align: center; font-size: 0.62rem; font-weight: 700;
+      color: #bbb; padding-bottom: 0.3rem;
+    }
+    .cal-day {
+      position: relative; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; background: transparent; user-select: none;
+    }
+    .cal-day.empty, .cal-day.past { cursor: default; }
+    .cal-day-inner {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 500; color: #1a1a2e;
+      position: relative; z-index: 1; transition: background 0.1s;
+    }
+    .cal-day.past .cal-day-inner { color: #ccc; }
+    .cal-day:not(.past):not(.empty):hover .cal-day-inner { background: #f2e9d9; }
+    .cal-day.today .cal-day-inner { border: 2px solid #4f4300; font-weight: 700; }
+    .cal-day.in-range  { background: #f2e9d9; }
+    .cal-day.range-start { background: linear-gradient(to right, transparent 50%, #f2e9d9 50%); }
+    .cal-day.range-end   { background: linear-gradient(to left,  transparent 50%, #f2e9d9 50%); }
+    .cal-day.range-start.range-end { background: transparent; }
+    .cal-day.dep-sel .cal-day-inner,
+    .cal-day.ret-sel .cal-day-inner { background: #4f4300; color: #fff; font-weight: 700; }
+    .cal-day.dep-sel:hover .cal-day-inner,
+    .cal-day.ret-sel:hover .cal-day-inner { background: #3a3000; }
+
+    .cal-weekend-view { display: none; flex-wrap: wrap; gap: 0.5rem; padding: 0.9rem 1.2rem 1.2rem; }
+    .cal-weekend-pill {
+      background: #fdf8e8; border: 1.5px solid #e8dca0; border-radius: 20px;
+      padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; color: #1a1a2e; text-align: left;
+      transition: all 0.12s;
+    }
+    .cal-weekend-pill:hover { background: #f2e9d9; border-color: #4f4300; }
+    .cal-weekend-pill.sel { background: #4f4300; color: #fff; border-color: #4f4300; }
+    .cal-wk-sub { font-size: 0.68rem; color: #999; margin-top: 1px; }
+    .cal-weekend-pill.sel .cal-wk-sub { color: rgba(255,255,255,0.65); }
+
+    .cal-month-view { display: none; grid-template-columns: repeat(4,1fr); gap: 0.5rem; padding: 0.9rem 1.2rem 1.2rem; }
+    .cal-month-pill {
+      background: #fdf8e8; border: 1.5px solid #e8dca0; border-radius: 10px;
+      padding: 0.6rem 0.4rem; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; text-align: center; color: #1a1a2e; transition: all 0.12s;
+    }
+    .cal-month-pill:hover  { background: #f2e9d9; border-color: #4f4300; }
+    .cal-month-pill.sel    { background: #4f4300; color: #fff; border-color: #4f4300; }
+    .cal-month-pill.past   { opacity: 0.3; cursor: default; pointer-events: none; }
 
     .field label {
       display: block;
@@ -1029,12 +1152,14 @@
 
     <div class="dates-row">
       <div class="field">
-        <label>Departure</label>
-        <input type="date" id="depart_date" value="2026-04-14" />
-      </div>
-      <div class="field" id="return-row" style="display:block">
-        <label>Return</label>
-        <input type="date" id="return_date" value="2026-04-18" />
+        <label>Dates</label>
+        <button class="cal-trigger" id="cal-trigger" onclick="calToggle()">
+          <span id="cal-trig-dep" class="cal-trigger-ph">Add departure date</span>
+          <span id="cal-trig-sep" class="cal-trigger-sep" style="display:none">→</span>
+          <span id="cal-trig-ret" style="display:none"></span>
+        </button>
+        <input type="hidden" id="depart_date" value="" />
+        <input type="hidden" id="return_date"  value="" />
       </div>
     </div>
 
@@ -1043,6 +1168,37 @@
       <button class="scan-link-btn" id="scanBtn" onclick="scanDeals()">📅 Stay blocks — next 90 days</button>
     </div>
   </div>
+</div>
+
+<!-- Momondo-style calendar popup -->
+<div class="cal-popup" id="cal-popup">
+  <div class="cal-tabs">
+    <button class="cal-tab active" data-tab="dates"   onclick="calSetTab('dates')">Datums</button>
+    <button class="cal-tab"        data-tab="weekend" onclick="calSetTab('weekend')">Weekend</button>
+    <button class="cal-tab"        data-tab="month"   onclick="calSetTab('month')">Maand</button>
+  </div>
+  <div class="cal-step-bar">
+    <div class="cal-step-item active" id="cal-step-dep" onclick="calSetStep('dep')">
+      <span class="cal-step-title">Vertrek</span>
+      <span class="cal-step-date ph" id="cal-step-dep-date">Datum toevoegen</span>
+    </div>
+    <div class="cal-step-item" id="cal-step-ret" onclick="calSetStep('ret')">
+      <span class="cal-step-title">Terugvlucht</span>
+      <span class="cal-step-date ph" id="cal-step-ret-date">Datum toevoegen</span>
+    </div>
+  </div>
+  <div class="cal-nav-row" id="cal-nav-row">
+    <button class="cal-nav-btn" id="cal-prev-btn" onclick="calPrev()">&#8249;</button>
+    <div style="flex:1"></div>
+    <button class="cal-nav-btn" onclick="calNext()">&#8250;</button>
+  </div>
+  <div class="cal-months-wrap" id="cal-months-wrap">
+    <div class="cal-month-panel" id="cal-month-0"></div>
+    <div class="cal-months-divider"></div>
+    <div class="cal-month-panel" id="cal-month-1"></div>
+  </div>
+  <div class="cal-weekend-view" id="cal-weekend-view"></div>
+  <div class="cal-month-view"   id="cal-month-view"></div>
 </div>
 <div id="deals-results" style="max-width:900px;margin:0 auto;padding:0 1rem;"></div>
 
@@ -1468,7 +1624,7 @@
     tripType = type;
     document.getElementById("btn-oneway").classList.toggle("active", type === "oneway");
     document.getElementById("btn-roundtrip").classList.toggle("active", type === "roundtrip");
-    document.getElementById("return-row").style.display = type === "roundtrip" ? "block" : "none";
+    calSetTrip(type);
   }
 
   function initials(name) {
@@ -3202,7 +3358,236 @@ async function openCalendarFromPanel(btn) {
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => { apInit(); updateTabCounts(); });
+  // ── Momondo-style Calendar ─────────────────────────────────────────
+  const CAL_M  = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  const CAL_D  = ['m','d','w','d','v','z','z'];
+  const _cal   = { tab:'dates', step:'dep', depDate:null, retDate:null, hover:null, year0:0, month0:0, oneway:false };
+
+  function calInit() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    _cal.year0  = today.getFullYear();
+    _cal.month0 = today.getMonth();
+    _calUpdateHidden();
+    _calUpdateTrigger();
+    document.addEventListener('click', e => {
+      const path    = e.composedPath();
+      const popup   = document.getElementById('cal-popup');
+      const trigger = document.getElementById('cal-trigger');
+      if (!path.includes(popup) && !path.includes(trigger)) calClose();
+    });
+  }
+
+  function _calFmt(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function _calDisp(ds) {
+    const d = new Date(ds + 'T00:00:00');
+    return `${d.getDate()} ${CAL_M[d.getMonth()].slice(0,3)} ${d.getFullYear()}`;
+  }
+  function _calUpdateHidden() {
+    document.getElementById('depart_date').value = _cal.depDate || '';
+    document.getElementById('return_date').value  = _cal.oneway ? '' : (_cal.retDate || '');
+  }
+  function _calUpdateTrigger() {
+    const dep = document.getElementById('cal-trig-dep');
+    const ret = document.getElementById('cal-trig-ret');
+    const sep = document.getElementById('cal-trig-sep');
+    if (_cal.depDate) {
+      dep.textContent = _calDisp(_cal.depDate); dep.className = '';
+      if (!_cal.oneway && _cal.retDate) {
+        ret.textContent = _calDisp(_cal.retDate);
+        ret.style.display = sep.style.display = '';
+      } else { ret.style.display = sep.style.display = 'none'; }
+    } else {
+      dep.textContent = 'Add departure date'; dep.className = 'cal-trigger-ph';
+      ret.style.display = sep.style.display = 'none';
+    }
+  }
+
+  function calToggle() {
+    const p = document.getElementById('cal-popup');
+    p.classList.contains('open') ? calClose() : calOpen();
+  }
+  function calOpen() {
+    const popup = document.getElementById('cal-popup');
+    const rect  = document.getElementById('cal-trigger').getBoundingClientRect();
+    const w     = Math.min(640, window.innerWidth - 16);
+    let   left  = rect.left;
+    if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+    popup.style.cssText = `top:${rect.bottom + 6}px;left:${Math.max(8,left)}px;width:${w}px`;
+    // If both dates already set → restart with dep step so user can change departure.
+    // If only dep set → continue to ret step. If nothing set → dep step.
+    _cal.step = (_cal.depDate && !_cal.retDate && !_cal.oneway) ? 'ret' : 'dep';
+    _calRender();
+    popup.classList.add('open');
+    document.getElementById('cal-trigger').classList.add('open');
+  }
+  function calClose() {
+    document.getElementById('cal-popup').classList.remove('open');
+    document.getElementById('cal-trigger').classList.remove('open');
+    _cal.hover = null;
+  }
+  function calSetTab(tab) { _cal.tab = tab; _calRender(); }
+  function calPrev() {
+    _cal.month0--; if (_cal.month0 < 0) { _cal.month0 = 11; _cal.year0--; } _calRender();
+  }
+  function calNext() {
+    _cal.month0++; if (_cal.month0 > 11) { _cal.month0 = 0; _cal.year0++; } _calRender();
+  }
+
+  function _calRender() {
+    const popup = document.getElementById('cal-popup');
+    popup.querySelectorAll('.cal-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === _cal.tab));
+
+    const mw = document.getElementById('cal-months-wrap');
+    const nr = document.getElementById('cal-nav-row');
+    const wv = document.getElementById('cal-weekend-view');
+    const mv = document.getElementById('cal-month-view');
+    mw.style.display = nr.style.display = (_cal.tab === 'dates')   ? '' : 'none';
+    wv.style.display = (_cal.tab === 'weekend') ? 'flex' : 'none';
+    mv.style.display = (_cal.tab === 'month')   ? 'grid' : 'none';
+
+    // Step bar
+    document.getElementById('cal-step-dep').classList.toggle('active', _cal.step === 'dep');
+    document.getElementById('cal-step-ret').classList.toggle('active', _cal.step === 'ret');
+    document.getElementById('cal-step-ret').style.display = _cal.oneway ? 'none' : '';
+    const depDE = document.getElementById('cal-step-dep-date');
+    const retDE = document.getElementById('cal-step-ret-date');
+    depDE.textContent = _cal.depDate ? _calDisp(_cal.depDate) : 'Datum toevoegen';
+    depDE.className   = 'cal-step-date' + (_cal.depDate ? '' : ' ph');
+    retDE.textContent = _cal.retDate   ? _calDisp(_cal.retDate)  : 'Datum toevoegen';
+    retDE.className   = 'cal-step-date' + (_cal.retDate ? '' : ' ph');
+
+    // Prev button disabled if at current month
+    const now = new Date();
+    document.getElementById('cal-prev-btn').classList.toggle('disabled',
+      _cal.year0 < now.getFullYear() || (_cal.year0 === now.getFullYear() && _cal.month0 <= now.getMonth()));
+
+    if (_cal.tab === 'dates')   _calRenderMonths();
+    if (_cal.tab === 'weekend') _calRenderWeekends();
+    if (_cal.tab === 'month')   _calRenderMonthPills();
+  }
+
+  function _calRenderMonths() {
+    let y1 = _cal.year0, m1 = _cal.month0;
+    let y2 = y1, m2 = m1 + 1;
+    if (m2 > 11) { m2 = 0; y2++; }
+    document.getElementById('cal-month-0').innerHTML = _calBuildMonth(y1, m1);
+    document.getElementById('cal-month-1').innerHTML = _calBuildMonth(y2, m2);
+  }
+
+  function _calBuildMonth(yr, mo) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dow   = (new Date(yr, mo, 1).getDay() + 6) % 7;
+    const days  = new Date(yr, mo + 1, 0).getDate();
+    let rs = _cal.depDate, re = _cal.retDate;
+    if (_cal.step === 'ret' && _cal.hover && _cal.depDate && _cal.hover > _cal.depDate) re = _cal.hover;
+
+    let h = `<div class="cal-month-title">${CAL_M[mo]} ${yr}</div><div class="cal-grid">`;
+    h += CAL_D.map(d => `<div class="cal-hdr">${d}</div>`).join('');
+    for (let i = 0; i < dow; i++) h += '<div class="cal-day empty"></div>';
+
+    for (let day = 1; day <= days; day++) {
+      const ds  = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dt  = new Date(yr, mo, day);
+      const past = dt < today;
+      const cls = ['cal-day',
+        past                                           ? 'past'        : '',
+        dt.getTime() === today.getTime()               ? 'today'       : '',
+        _cal.depDate === ds                            ? 'dep-sel'     : '',
+        !_cal.oneway && _cal.retDate === ds            ? 'ret-sel'     : '',
+        !_cal.oneway && rs && re && ds>rs && ds<re     ? 'in-range'    : '',
+        !_cal.oneway && rs && re && ds === rs          ? 'range-start' : '',
+        !_cal.oneway && rs && re && ds === re          ? 'range-end'   : '',
+      ].filter(Boolean).join(' ');
+      const ev = past ? '' : `onclick="calPick('${ds}')" onmouseenter="calHov('${ds}')" onmouseleave="calHovOut()"`;
+      h += `<div class="${cls}" data-ds="${ds}" ${ev}><div class="cal-day-inner">${day}</div></div>`;
+    }
+    return h + '</div>';
+  }
+
+  function calPick(ds) {
+    if (_cal.step === 'dep' || (_cal.depDate && ds <= _cal.depDate)) {
+      _cal.depDate = ds; _cal.retDate = null;
+      _cal.step = _cal.oneway ? 'done' : 'ret';
+      if (_cal.oneway) { _calUpdateHidden(); _calUpdateTrigger(); setTimeout(calClose, 220); return; }
+    } else {
+      _cal.retDate = ds; _cal.step = 'done';
+      _calUpdateHidden(); _calUpdateTrigger(); setTimeout(calClose, 220); return;
+    }
+    _calUpdateHidden(); _calUpdateTrigger(); _calRender(); _calUpdateRangeClasses();
+  }
+  function _calUpdateRangeClasses() {
+    const rs = _cal.depDate;
+    const re = (_cal.step === 'ret' && _cal.hover && _cal.depDate && _cal.hover > _cal.depDate)
+               ? _cal.hover : _cal.retDate;
+    document.querySelectorAll('.cal-day[data-ds]').forEach(el => {
+      const ds = el.dataset.ds;
+      el.classList.toggle('in-range',    !_cal.oneway && !!(rs && re && ds > rs && ds < re));
+      el.classList.toggle('range-start', !_cal.oneway && !!(rs && re && ds === rs));
+      el.classList.toggle('range-end',   !_cal.oneway && !!(rs && re && ds === re));
+    });
+  }
+  function calHov(ds)  { _cal.hover = ds;   if (_cal.step === 'ret') _calUpdateRangeClasses(); }
+  function calHovOut() { _cal.hover = null;  if (_cal.step === 'ret') _calUpdateRangeClasses(); }
+
+  function _calRenderWeekends() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    let d = new Date(today);
+    while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+    let h = '';
+    for (let i = 0; i < 10; i++) {
+      const fri = new Date(d), sun = new Date(d);
+      sun.setDate(fri.getDate() + 2);
+      const fs = _calFmt(fri), ss = _calFmt(sun);
+      const sel = _cal.depDate === fs && _cal.retDate === ss;
+      h += `<button class="cal-weekend-pill${sel?' sel':''}" onclick="calPickWeekend('${fs}','${ss}')">
+        <div>${fri.getDate()}–${sun.getDate()} ${CAL_M[sun.getMonth()].slice(0,3)}</div>
+        <div class="cal-wk-sub">${CAL_M[fri.getMonth()].slice(0,3)} ${fri.getFullYear()}</div>
+      </button>`;
+      d.setDate(d.getDate() + 7);
+    }
+    document.getElementById('cal-weekend-view').innerHTML = h;
+  }
+  function calPickWeekend(fs, ss) {
+    _cal.depDate = fs; _cal.retDate = _cal.oneway ? null : ss; _cal.step = 'done';
+    _calUpdateHidden(); _calUpdateTrigger(); _calRender(); setTimeout(calClose, 250);
+  }
+
+  function _calRenderMonthPills() {
+    const now = new Date();
+    let y = now.getFullYear(), m = now.getMonth(), h = '';
+    for (let i = 0; i < 12; i++) {
+      const first = `${y}-${String(m+1).padStart(2,'0')}-01`;
+      const last  = _calFmt(new Date(y, m+1, 0));
+      const past  = y < now.getFullYear() || (y === now.getFullYear() && m < now.getMonth());
+      const sel   = _cal.depDate >= first && _cal.depDate <= last;
+      h += `<button class="cal-month-pill${sel?' sel':''}${past?' past':''}" onclick="${past?'':` calPickMonth('${first}','${last}')`}">
+        <div>${CAL_M[m].slice(0,3)}</div><div style="font-size:0.65rem;opacity:0.65">${y}</div>
+      </button>`;
+      if (++m > 11) { m = 0; y++; }
+    }
+    document.getElementById('cal-month-view').innerHTML = h;
+  }
+  function calPickMonth(first, last) {
+    _cal.depDate = first; _cal.retDate = _cal.oneway ? null : last; _cal.step = 'done';
+    _calUpdateHidden(); _calUpdateTrigger(); _calRender(); setTimeout(calClose, 250);
+  }
+
+  function calSetStep(step) {
+    if (_cal.oneway && step === 'ret') return;
+    _cal.step = step;
+    _calRender();
+  }
+  function calSetTrip(type) {
+    _cal.oneway = (type === 'oneway');
+    if (_cal.oneway) _cal.retDate = null;
+    _calUpdateHidden(); _calUpdateTrigger();
+    if (document.getElementById('cal-popup').classList.contains('open')) _calRender();
+  }
+  // ── end calendar ───────────────────────────────────────────────────
+
+  document.addEventListener("DOMContentLoaded", () => { apInit(); calInit(); updateTabCounts(); });
 </script>
 
 <div id="tl-tooltip"></div>
